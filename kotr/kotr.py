@@ -267,7 +267,12 @@ class Kotr(commands.Cog):
     async def _get_kotrCostr(self, ctx):
         """Get the current cost of the role."""
         config = await self.config.guild(ctx.guild).Config()
-        await ctx.send("The role currently costs {}.".format(config["Cost"]))
+        curTime = int(time.time())
+        timeDif = curTime - config["LastPurchase"]
+        cost = config["Cost"] - int((timeDif / config["Timer"])) * config["Decrease"]
+        if cost < config["MinCost"]:
+            cost = config["MinCost"]
+        await ctx.send("The role currently costs {}.".format(cost))
 
     @kotr.command(name="colourlist")
     async def _get_colours(self,ctx):
@@ -317,7 +322,12 @@ class Kotr(commands.Cog):
         """Set the current cost of the role."""
         guild = ctx.guild
         config = await self.config.guild(guild).Config()
-        config["Cost"] = newCost
+
+        curTime = int(time.time())
+        timeDif = curTime - config["LastPurchase"]
+        currentDiscount = int((timeDif / config["Timer"])) * config["Decrease"]
+        config["Cost"] = newCost + currentDiscount  #counter the current discount
+
         await ctx.send("Command succeeded. New price: {0}".format(newCost))
         await self.config.guild(guild).Config.set(config) #save our changes
         pass  
