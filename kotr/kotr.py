@@ -263,6 +263,12 @@ class Kotr(commands.Cog):
     async def _set_kotrColor(self, ctx):
         await self._set_kotrColour(ctx,useColor=True)
 
+
+    @kotr.command(name="cost")
+    async def _get_kotrCostr(self, ctx):
+        config = await self.config.guild(ctx.guild).Config()
+        await ctx.send("The role currently costs {}.".format(config["Cost"]))
+
     @kotr.command(name="colourlist")
     async def _get_colours(self,ctx):
         """Shows a list of all configured colours on the server."""
