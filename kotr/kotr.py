@@ -132,6 +132,10 @@ class Kotr(commands.Cog):
         roleInfo = await self.config.guild(ctx.guild).RoleInfo()
         role = get(ctx.guild.roles, name=roleInfo["Role"])
 
+        if author.id == ownerInfo["Owner"]:
+            await ctx.send("You already own the role!")
+            return
+
         curTime = int(time.time())
         timeDif = curTime - config["LastPurchase"]
         cost = config["Cost"] - int((timeDif / config["Timer"])) * config["Decrease"]
