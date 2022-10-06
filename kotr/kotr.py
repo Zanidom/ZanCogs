@@ -266,6 +266,7 @@ class Kotr(commands.Cog):
 
     @kotr.command(name="cost")
     async def _get_kotrCostr(self, ctx):
+        """Get the current cost of the role."""
         config = await self.config.guild(ctx.guild).Config()
         await ctx.send("The role currently costs {}.".format(config["Cost"]))
 
