@@ -221,9 +221,8 @@ class Kotr(commands.Cog):
             return
 
         check = lambda m: m.author == author
-
-        await ctx.send("Which {} would you like? Current options:".format(colourText))
-        self._get_colours(ctx)
+        
+        await self._get_colours(ctx)
 
         try:
             response = await self.bot.wait_for("message", timeout=30, check=check)
@@ -263,7 +262,7 @@ class Kotr(commands.Cog):
         colours = "```"
         for colour, colourValue in new_colourList.items():
             colours += "{0}: {1}\n".format(colour,format(colourValue, 'X').zfill(6))
-        colours += "```"
+        colours += "```\nYou can check these colours out here: https://g.co/kgs/KpKq4S"
         await ctx.send(colours)
 
     @kotr.command(name="colorlist", hidden=True)
