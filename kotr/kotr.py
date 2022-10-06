@@ -103,9 +103,15 @@ class Kotr(commands.Cog):
         except:
             ownerUser = "Not yet owned."
             
+        curTime = int(time.time())
+        timeDif = curTime - serverConfig["LastPurchase"]
+        cost = serverConfig["Cost"] - int((timeDif / serverConfig["Timer"])) * serverConfig["Decrease"]
+        if cost < serverConfig["MinCost"]:
+            cost = serverConfig["MinCost"]
+
         embed = discord.Embed(colour=0x0066FF, description="\n")
         embed.title = "{} current KotR settings:".format(guild.name)
-        embed.add_field(name="Current KotR cost", value=serverConfig["Cost"])
+        embed.add_field(name="Current KotR cost", value=cost)
         embed.add_field(name="Current minimum cost:", value=serverConfig["MinCost"])
         embed.add_field(name="Current increase on purchase", value=serverConfig["Increase"])
         embed.add_field(name="Current decrease per tick:", value=serverConfig["Decrease"])
@@ -120,7 +126,6 @@ class Kotr(commands.Cog):
         """Makes you the shiny new owner of the KotR role!"""
         config = await self.config.guild(ctx.guild).Config()
         author = ctx.message.author
-        cost = config["Cost"]
         costIncrease = config["Increase"]
         curBal = await bank.get_balance(ctx.author)
         ownerInfo = await self.config.guild(ctx.guild).OwnerInfo()
@@ -129,6 +134,9 @@ class Kotr(commands.Cog):
 
         curTime = int(time.time())
         timeDif = curTime - config["LastPurchase"]
+        cost = config["Cost"] - int((timeDif / config["Timer"])) * config["Decrease"]
+        if cost < config["MinCost"]:
+            cost = config["MinCost"]
 
         if timeDif < config["Cooldown"]:
             await ctx.send(str("It's too soon! Buying this role is still on cooldown for another ~{} seconds.").format(config["Cooldown"]-timeDif))
