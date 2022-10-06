@@ -83,7 +83,6 @@ class Kotr(commands.Cog):
         await ctx.send(embed=embed)
 
     @kotr.command(name="config")
-    @checks.admin_or_permissions(manage_guild=True)
     async def _config_kotr(self, ctx):
         """Shows the Kotr configuration for this server."""
         guild = ctx.guild
@@ -110,15 +109,15 @@ class Kotr(commands.Cog):
             cost = serverConfig["MinCost"]
 
         embed = discord.Embed(colour=0x0066FF, description="\n")
-        embed.title = "{} current KotR settings:".format(guild.name)
-        embed.add_field(name="Current KotR cost", value=cost)
-        embed.add_field(name="Current minimum cost:", value=serverConfig["MinCost"])
-        embed.add_field(name="Current increase on purchase", value=serverConfig["Increase"])
-        embed.add_field(name="Current decrease per tick:", value=serverConfig["Decrease"])
-        embed.add_field(name="Current time per tick:", value=serverConfig["Timer"])
-        embed.add_field(name="Current cooldown between purchases:", value=serverConfig["Cooldown"])
-        embed.add_field(name="Current role:", value=role)
-        embed.add_field(name="Current owner:", value=ownerUser)
+        embed.title = "{} KotR settings:".format(guild.name)
+        embed.add_field(name="KotR cost", value=cost)
+        embed.add_field(name="Minimum cost:", value=serverConfig["MinCost"])
+        embed.add_field(name="Increase on purchase", value=serverConfig["Increase"])
+        embed.add_field(name="Decrease per tick:", value=serverConfig["Decrease"])
+        embed.add_field(name="Time per tick:", value=serverConfig["Timer"])
+        embed.add_field(name="Cooldown between purchases:", value=serverConfig["Cooldown"])
+        embed.add_field(name="Current Owner:", value=ownerUser)
+        embed.add_field(name="Role:", value=role)
         await ctx.send(embed=embed)
 
     @kotr.command(name="buyrole")
