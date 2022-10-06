@@ -1,0 +1,9 @@
+{
+  "author": [ "Zan (Zan#6176)" ],
+    "short" : "Supplies Jen's Orgasm Tracker on demand'",
+    "description" : "Made for TBC server by Zan (Zan#6176), posts a link to Jen's Orgasm tracker on request",
+    "name" : "JenTracker",
+    "requirements": ["tabulate"],
+    "tags" : ["games"],
+    "install_msg" : "Thank you for installing JenTracker. Made by Zan#6176."
+}
