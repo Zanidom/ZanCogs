@@ -202,15 +202,21 @@ class Kotr(commands.Cog):
         await ctx.send("KotR - King of the Role - is a small game with a role that only one person can own at a time.\nIf you want to buy the role, try ;kotr buyrole. If you own the role, you can set your own colour with ;kotr setcolor\n\nIf this is newly installed, you'll want to use ;setkotr and check out some of the configuration options.\nMessage Zan#6176 if you have any feedback or requests.")
 
     @kotr.command(name="setcolour")
-    async def _set_kotrColour(self, ctx, useColor = False):
+    async def _set_kotrColour(self, ctx, stringput = "", stringput2 ="", stringput3 = "", stringput4 = "", stringput5 = "",  useColor = False):  #little hacky way to get around Discord telling me inputs are wrong. Will error if there's a long ass colour name. lol.
         """If you're the owner, you can choose your colour!"""
         colourList = await self.config.guild(ctx.guild).Colours()
         author = ctx.message.author
         ownerInfo = await self.config.guild(ctx.guild).OwnerInfo()
         roleInfo = await self.config.guild(ctx.guild).RoleInfo()
         role = get(ctx.guild.roles, name=roleInfo["Role"])
-        
+
         colourText = "color" if useColor else "colour"
+        commandLength = 15 if useColor else 16
+        response = None
+        
+
+        if len(ctx.message.content) > commandLength:
+            response = ctx.message.content[commandLength:]
 
         if role is None:
             await ctx.send("Error looking up role. The role may not have been configured.")
@@ -222,20 +228,27 @@ class Kotr(commands.Cog):
 
         check = lambda m: m.author == author
         
-        await self._get_colours(ctx)
+        if response is None:
+            
+            await self._get_colours(ctx)
 
-        try:
-            response = await self.bot.wait_for("message", timeout=30, check=check)
-        except asyncio.TimeoutError:
-            await ctx.send("Cancelled change. You took too long.")
-            return
-        
-        if response.content.title().lower() == "cancel" or response.content.title().lower() == "exit":
-            await ctx.send("Cancelled change.")
-            return
+            try:
+                response = await self.bot.wait_for("message", timeout=30, check=check)
+            except asyncio.TimeoutError:
+                await ctx.send("Cancelled change. You took too long.")
+                return
+            
+            if response.content.title().lower() == "cancel" or response.content.title().lower() == "exit":
+                await ctx.send("Cancelled change.")
+                return
 
-        if response.content.title() in colourList:
-            newcolour = colourList[response.content.title()]
+            if response.content.title() in colourList:
+                newcolour = colourList[response.content.title()]
+        elif response.title() in colourList:
+            newcolour = colourList[response.title()]
+        else:
+            await ctx.send("That's not a valid colour.")
+            return
 
         try:
             await role.edit(colour=newcolour)
@@ -248,7 +261,7 @@ class Kotr(commands.Cog):
 
     @kotr.command(name="setcolor", hidden=True)
     async def _set_kotrColor(self, ctx):
-        await self._set_kotrColour(ctx,True)
+        await self._set_kotrColour(ctx,useColor=True)
 
     @kotr.command(name="colourlist")
     async def _get_colours(self,ctx):
