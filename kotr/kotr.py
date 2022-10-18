@@ -51,17 +51,17 @@ class Kotr(commands.Cog):
                 "Dark Purple":0x580082,
                 "White":0xFFFFFF
                 },
-            "Titles":{
-                "King of the Role",
-                "Queen of the Role",
-                "Role Monarch",
-                "Brat King",
-                "Brat Queen",
-                "Brat Monarch",
-                "Role Champion",
-                "Awesome Being",
-                "Rich Kid",
-                "Zanillionaire"
+            "RoleTitles":{
+                "King of the Role":0,
+                "Queen of the Role":0,
+                "Role Monarch":0,
+                "Brat King":0,
+                "Brat Queen":0,
+                "Brat Monarch":0,
+                "Role Champion":0,
+                "Awesome Being":0,
+                "Rich Kid":0,
+                "Zanillionaire":0
                 }
         }
         self.config.register_guild(**default_guild)
@@ -280,7 +280,7 @@ class Kotr(commands.Cog):
     @kotr.command(name="settitle")
     async def _set_kotrtitle(self, ctx, *, message = ""):  #
         """If you're the owner, you can choose your role's title!"""
-        titleList = await self.config.guild(ctx.guild).Titles()
+        titleList = await self.config.guild(ctx.guild).RoleTitles()
         author = ctx.message.author
         ownerInfo = await self.config.guild(ctx.guild).OwnerInfo()
         roleInfo = await self.config.guild(ctx.guild).RoleInfo()
@@ -297,7 +297,7 @@ class Kotr(commands.Cog):
         check = lambda m: m.author == author
         
 
-        if message is "":
+        if message == "":
             await self._get_titles(ctx)
             await ctx.send("Which title would you like?")
             try:
@@ -361,7 +361,7 @@ class Kotr(commands.Cog):
     @kotr.command(name="titlelist")
     async def _get_titles(self,ctx):
         """Shows a list of all configured titles on the server."""
-        titleList = await self.config.guild(ctx.guild).Titles()
+        titleList = await self.config.guild(ctx.guild).RoleTitles()
         titleList = sorted(titleList)
 
         await ctx.send("Current options:")
@@ -579,11 +579,10 @@ class Kotr(commands.Cog):
     @checks.admin_or_permissions(manage_guild=True)
     async def _output_addtitle(self, ctx, useColor = False):
         """Add a title to the list."""
-        titleList = await self.config.guild(ctx.guild).Titles()
+        titleList = await self.config.guild(ctx.guild).RoleTitles()
         check = lambda m: m.author == ctx.author
         newTitleName = ""
         
-
         await ctx.send("Please input your new title.")
         try:
             response = await self.bot.wait_for("message", timeout=30, check=check)
@@ -598,15 +597,15 @@ class Kotr(commands.Cog):
            newTitleName = response.content.title()
            
 
-        titleList.add(newTitleName)
+        titleList[newTitleName] = 0
         await ctx.send("Successfully added new title \"{}\". ".format(newTitleName))
-        await self.config.guild(ctx.guild).Colours.set(titleList)
+        await self.config.guild(ctx.guild).RoleTitles.set(titleList)
 
-    @setkotr.command(name="removetitle", pass_context=True, hidden=True)
+    @setkotr.command(name="removetitle", pass_context=True)
     @checks.admin_or_permissions(manage_guild=True)
     async def _output_removetitle(self, ctx):
         """Removes a colour from the list."""
-        titleList = await self.config.guild(ctx.guild).Titles()
+        titleList = await self.config.guild(ctx.guild).RoleTitles()
         check = lambda m: m.author == ctx.author
 
         await ctx.send("Please input the title you want to delete.")
@@ -634,9 +633,9 @@ class Kotr(commands.Cog):
 
         if response.content.title().lower() == "yes" or response.content.title().lower() == "ye" or response.content.title().lower() == "y":
             del titleList[titleName]
-            await self.config.guild(ctx.guild).Colours.clear_raw(titleName)
+            await self.config.guild(ctx.guild).RoleTitles.clear_raw(titleName)
             await ctx.send("Successfully deleted \"{}\" from the title list.".format(titleName))
-            await self.config.guild(ctx.guild).Colours.set(titleList)  
+            await self.config.guild(ctx.guild).RoleTitles.set(titleList)  
         else:
             await ctx.send("Invalid reponse received. Cancelled \"{}\" removal.".format(titleName))
 
