@@ -221,7 +221,7 @@ class Kotr(commands.Cog):
         author = ctx.message.author
         ownerInfo = await self.config.guild(ctx.guild).OwnerInfo()
         roleInfo = await self.config.guild(ctx.guild).RoleInfo()
-        role = ctx.guild.get_role(roleInfo["roleId"])
+        role = ctx.guild.get_role(roleInfo["RoleId"])
 
         colourText = "color" if useColor else "colour"
         commandLength = 15 if useColor else 16
