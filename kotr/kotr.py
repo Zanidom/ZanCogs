@@ -604,7 +604,7 @@ class Kotr(commands.Cog):
     @setkotr.command(name="removetitle", pass_context=True)
     @checks.admin_or_permissions(manage_guild=True)
     async def _output_removetitle(self, ctx):
-        """Removes a colour from the list."""
+        """Removes a title from the list."""
         titleList = await self.config.guild(ctx.guild).RoleTitles()
         check = lambda m: m.author == ctx.author
 
