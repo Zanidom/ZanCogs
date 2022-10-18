@@ -31,6 +31,7 @@ class Kotr(commands.Cog):
             },
             "RoleInfo":{
                 "Role": "",
+                "RoleId":0
             },
 
             "Colours":{
@@ -49,6 +50,18 @@ class Kotr(commands.Cog):
                 "Light Purple":0x7F00C9,
                 "Dark Purple":0x580082,
                 "White":0xFFFFFF
+                },
+            "Titles":{
+                "King of the Role",
+                "Queen of the Role",
+                "Role Monarch",
+                "Brat King",
+                "Brat Queen",
+                "Brat Monarch",
+                "Role Champion",
+                "Awesome Being",
+                "Rich Kid",
+                "Zanillionaire"
                 }
         }
         self.config.register_guild(**default_guild)
@@ -92,7 +105,7 @@ class Kotr(commands.Cog):
         roleInfo = await self.config.guild(guild).RoleInfo()
         ownerId = ownerInfo["Owner"]
 
-        role = get(ctx.guild.roles, name=roleInfo["Role"])
+        role = ctx.guild.get_role(roleInfo["RoleId"])
 
         if role is None:
             role = "Invalid role configuration."
@@ -117,6 +130,7 @@ class Kotr(commands.Cog):
         embed.add_field(name="Time per tick:", value=serverConfig["Timer"])
         embed.add_field(name="Cooldown between purchases:", value=serverConfig["Cooldown"])
         embed.add_field(name="Current Owner:", value=ownerUser)
+        embed.add_field(name="Current Title:", value=ownerUser)
         embed.add_field(name="Role:", value=role)
         await ctx.send(embed=embed)
 
@@ -129,7 +143,7 @@ class Kotr(commands.Cog):
         curBal = await bank.get_balance(ctx.author)
         ownerInfo = await self.config.guild(ctx.guild).OwnerInfo()
         roleInfo = await self.config.guild(ctx.guild).RoleInfo()
-        role = get(ctx.guild.roles, name=roleInfo["Role"])
+        role = ctx.guild.get_role(roleInfo["RoleId"])
 
         if author.id == ownerInfo["Owner"]:
             await ctx.send("You already own the role!")
@@ -207,7 +221,7 @@ class Kotr(commands.Cog):
         author = ctx.message.author
         ownerInfo = await self.config.guild(ctx.guild).OwnerInfo()
         roleInfo = await self.config.guild(ctx.guild).RoleInfo()
-        role = get(ctx.guild.roles, name=roleInfo["Role"])
+        role = ctx.guild.get_role(roleInfo["roleId"])
 
         colourText = "color" if useColor else "colour"
         commandLength = 15 if useColor else 16
@@ -230,6 +244,7 @@ class Kotr(commands.Cog):
         if response is None:
             
             await self._get_colours(ctx)
+            await ctx.send("Which {} would you like?".format(colourText))
 
             try:
                 response = await self.bot.wait_for("message", timeout=30, check=check)
@@ -262,6 +277,56 @@ class Kotr(commands.Cog):
     async def _set_kotrColor(self, ctx):
         await self._set_kotrColour(ctx,useColor=True)
 
+    @kotr.command(name="settitle")
+    async def _set_kotrtitle(self, ctx, *, message = ""):  #
+        """If you're the owner, you can choose your role's title!"""
+        titleList = await self.config.guild(ctx.guild).Titles()
+        author = ctx.message.author
+        ownerInfo = await self.config.guild(ctx.guild).OwnerInfo()
+        roleInfo = await self.config.guild(ctx.guild).RoleInfo()
+        role = ctx.guild.get_role(roleInfo["RoleId"])
+
+        if role is None:
+            await ctx.send("Error looking up role. The role may not have been configured.")
+            return
+       
+        if author.id != ownerInfo["Owner"]:
+            await ctx.send("You don't own the role currently!\nOnly the owner of the role may set their title.")
+            return
+
+        check = lambda m: m.author == author
+        
+
+        if message is "":
+            await self._get_titles(ctx)
+            await ctx.send("Which title would you like?")
+            try:
+                message = await self.bot.wait_for("message", timeout=30, check=check)
+            except asyncio.TimeoutError:
+                await ctx.send("Cancelled change. You took too long.")
+                return
+            
+            if message.content.title().lower() == "cancel" or message.content.title().lower() == "exit":
+                await ctx.send("Cancelled change.")
+                return
+
+            if message.content.title() in titleList:
+                newTitle = message.content.title()
+
+        elif message.title() in titleList:
+            newTitle = message.title()
+        else:
+            await ctx.send("That's not a valid title.")
+            return
+
+        try:
+            await role.edit(name=newTitle)
+        except:
+            await ctx.send("Miscellaneous error when changing role title, probably a permissions issue.")
+            return
+        
+        await ctx.send("Change successful! Enjoy your new title.")
+        return
 
     @kotr.command(name="cost")
     async def _get_kotrCostr(self, ctx):
@@ -293,6 +358,19 @@ class Kotr(commands.Cog):
     async def _get_colors(self,ctx):
         await self._get_colours(ctx)
 
+    @kotr.command(name="titlelist")
+    async def _get_titles(self,ctx):
+        """Shows a list of all configured titles on the server."""
+        titleList = await self.config.guild(ctx.guild).Titles()
+        titleList = sorted(titleList)
+
+        await ctx.send("Current options:")
+        titles = "```"
+        for title in titleList:
+            titles += "{}\n".format(title)
+        titles += "```"
+        await ctx.send(titles)
+
     @commands.group(no_pm=True, pass_context=True)
     async def setkotr(self, ctx):
         """Set config options for KotR"""
@@ -311,7 +389,8 @@ class Kotr(commands.Cog):
         if role is None:
             await ctx.send(str("Couldn't find a role with the name {}. Exiting.").format(roleName))
             return
-        roleInfo["Role"] = role.name
+
+        roleInfo["RoleId"] = role.id
         await self.config.guild(ctx.guild).RoleInfo.set(roleInfo)
         await ctx.send("Command succeeded. New role: {0}".format(roleInfo))
         pass  
@@ -432,10 +511,10 @@ class Kotr(commands.Cog):
                 await ctx.send("0x found, trying to parse {}".format(response.content.lower()[2:]))
             elif "#" in response.content.lower():
                 newColour = int(response.content.lower()[1:], base=16)
-                await ctx.send("0x found, trying to parse {}".format(response.content.lower()[1:]))
+                await ctx.send("# found, trying to parse {}".format(response.content.lower()[1:]))
             else:
                 newColour = int(response.content.lower(), base=16)
-                await ctx.send("0x found, trying to parse {}".format(response.content.lower()))
+                await ctx.send("Trying to parse {}".format(response.content.lower()))
         except:
             await ctx.send("Could not parse your input, cancelling.")
             return
@@ -496,6 +575,71 @@ class Kotr(commands.Cog):
     async def _output_removecolor(self, ctx):
         await self._output_removecolour(ctx, True)
     
+    @setkotr.command(name="addtitle", pass_context=True)
+    @checks.admin_or_permissions(manage_guild=True)
+    async def _output_addtitle(self, ctx, useColor = False):
+        """Add a title to the list."""
+        titleList = await self.config.guild(ctx.guild).Titles()
+        check = lambda m: m.author == ctx.author
+        newTitleName = ""
+        
+
+        await ctx.send("Please input your new title.")
+        try:
+            response = await self.bot.wait_for("message", timeout=30, check=check)
+        except asyncio.TimeoutError:
+            await ctx.send("Cancelled, you took too long.")
+            return
+
+        if response.content in titleList:
+            await ctx.send("That title already exists.")
+            return
+        else:
+           newTitleName = response.content.title()
+           
+
+        titleList.add(newTitleName)
+        await ctx.send("Successfully added new title \"{}\". ".format(newTitleName))
+        await self.config.guild(ctx.guild).Colours.set(titleList)
+
+    @setkotr.command(name="removetitle", pass_context=True, hidden=True)
+    @checks.admin_or_permissions(manage_guild=True)
+    async def _output_removetitle(self, ctx):
+        """Removes a colour from the list."""
+        titleList = await self.config.guild(ctx.guild).Titles()
+        check = lambda m: m.author == ctx.author
+
+        await ctx.send("Please input the title you want to delete.")
+        try:
+            titleNameMSG = await self.bot.wait_for("message", timeout=30, check=check)
+        except asyncio.TimeoutError:
+            await ctx.send("Cancelled, you took too long.")
+            return
+
+        titleName = titleNameMSG.content.title()
+        if titleName not in titleList:
+            await ctx.send("No title with that name found. Exiting.")
+            return
+
+        await ctx.send("Are you sure you want to delete \"{}\"?".format(titleName))
+        try:
+            response = await self.bot.wait_for("message", timeout=30, check=check)
+        except asyncio.TimeoutError:
+            await ctx.send("Cancelled, you took too long.")
+            return
+
+        if response.content.title().lower() == "no" or response.content.title().lower() == "n":
+            await ctx.send("Cancelled title removal.")
+            return
+
+        if response.content.title().lower() == "yes" or response.content.title().lower() == "ye" or response.content.title().lower() == "y":
+            del titleList[titleName]
+            await self.config.guild(ctx.guild).Colours.clear_raw(titleName)
+            await ctx.send("Successfully deleted \"{}\" from the title list.".format(titleName))
+            await self.config.guild(ctx.guild).Colours.set(titleList)  
+        else:
+            await ctx.send("Invalid reponse received. Cancelled \"{}\" removal.".format(titleName))
+
     async def check_server_settings(self, guild):
         cur = await self.config.guild(guild).Config()
         if not cur["Registered"]:
