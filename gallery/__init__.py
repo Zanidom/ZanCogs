@@ -1,5 +1,6 @@
 from .gallery import Gallery
 
 
-def setup(bot):
-    await bot.add_cog(Gallery(bot))
+async def setup(bot):
+    cog = Gallery(bot)
+    await bot.add_cog(cog)
