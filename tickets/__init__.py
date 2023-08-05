@@ -1,6 +1,6 @@
-from .reacttickets import ReactTickets
+from .tickets import Tickets
 
 async def setup(bot):
-    cog = ReactTickets(bot)
-    bot.add_cog(cog)
+    cog = Tickets(bot)
+    await bot.add_cog(cog)
     await cog.initialize()
