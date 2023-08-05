@@ -2,21 +2,24 @@
 import datetime
 import typing
 import asyncio
+
 from redbot.core import Config, checks, commands
 from redbot.core.utils.predicates import MessagePredicate
+
 from redbot.core.bot import Red
 
 
-class Ticketer(commands.Cog):
+class ReactTickets(commands.Cog):
     """
     Reaction based assignable support tickets with custom cases (reasons).
     """
 
-    __version__ = "1.0.7"
+    __version__ = "1.0.6"
 
     def __init__(self, bot: Red):
         self.bot = bot
         self.enabled_cache = {}
+
         self.config = Config.get_conf(
             self, identifier=5465324654986213156, force_registration=False
         )
@@ -93,45 +96,45 @@ class Ticketer(commands.Cog):
         manage_messages=True,
         manage_permissions=True,
     )
-    async def tickets(self, ctx: commands.Context):
-        """Various ticket settings."""
+    async def ticketset(self, ctx: commands.Context):
+        """Various ReactTickets settings."""
 
-    @tickets.command(name="channel")
-    async def tickets_channel(
+    @ticketset.command(name="channel")
+    async def ticketset_channel(
         self, ctx: commands.Context, channel: discord.TextChannel
     ):
         """Set the support-request channel."""
         await self.config.guild(ctx.guild).request_channel.set(channel.id)
         await ctx.send(f"Channel has been set to {channel.mention}.")
 
-    @tickets.command(name="management")
-    async def tickets_management(
+    @ticketset.command(name="management")
+    async def ticketset_management(
         self, ctx: commands.Context, channel: discord.TextChannel
     ):
         """Set the support-management channel."""
         await self.config.guild(ctx.guild).channel.set(channel.id)
         await ctx.send(f"Channel has been set to {channel.mention}.")
 
-    @tickets.command(name="role")
-    async def tickets_role(self, ctx: commands.Context, role: discord.Role):
+    @ticketset.command(name="role")
+    async def ticketset_role(self, ctx: commands.Context, role: discord.Role):
         """Set the role for supports."""
         await self.config.guild(ctx.guild).role.set(role.id)
         await ctx.send(f"Support role has been set to {role.name}.")
 
-    @tickets.group(name="category")
-    async def tickets_category(self, ctx: commands.Context):
+    @ticketset.group(name="category")
+    async def ticketset_category(self, ctx: commands.Context):
         """Set the ticket categories."""
 
-    @tickets.command(name="open")
-    async def tickets_category_open(
+    @ticketset_category.command(name="open")
+    async def ticketset_category_open(
         self, ctx: commands.Context, *, category: discord.CategoryChannel
     ):
         """Set the category for open tickets."""
         await self.config.guild(ctx.guild).open_category.set(category.id)
         await ctx.send(f"Category for open tickets has been set to {category.mention}")
 
-    @tickets_category.command(name="closed")
-    async def tickets_category_closed(
+    @ticketset_category.command(name="closed")
+    async def ticketset_category_closed(
         self, ctx: commands.Context, *, category: discord.CategoryChannel
     ):
         """Set the category for closed tickets."""
@@ -140,12 +143,12 @@ class Ticketer(commands.Cog):
             f"Category for closed tickets has been set to {category.mention}"
         )
 
-    @tickets.group(name="case")
-    async def tickets_case(self, ctx: commands.Context):
+    @ticketset.group(name="case")
+    async def ticketset_case(self, ctx: commands.Context):
         """Set the ticket cases."""
 
-    @tickets_case.command(name="add")
-    async def tickets_case_add(
+    @ticketset_case.command(name="add")
+    async def ticketset_case_add(
         self, ctx: commands.Context, emoji: typing.Union[discord.Emoji, str]
     ):
         """Add a support case type."""
@@ -184,8 +187,8 @@ class Ticketer(commands.Cog):
         )
         await ctx.send(f"{title.content} was assigned to {emoji}.")
 
-    @tickets_case.command(name="del")
-    async def tickets_case_del(
+    @ticketset_case.command(name="del")
+    async def ticketset_case_del(
         self, ctx: commands.Context, emoji: typing.Union[discord.Emoji, str]
     ):
         """Remove a support case type."""
@@ -201,15 +204,15 @@ class Ticketer(commands.Cog):
         await self.config.guild(ctx.guild).cases.clear_raw(emoji)
         await ctx.send(f"{emoji} has been deleted.")
 
-    @tickets_case.command(name="all")
-    async def tickets_case_all(self, ctx: commands.Context):
+    @ticketset_case.command(name="all")
+    async def ticketset_case_all(self, ctx: commands.Context):
         """Display all registered cases."""
         cases = await self.config.guild(ctx.guild).cases.get_raw()
         string = self._get_cases_string(cases, "**Registered cases:**")
         await ctx.send(string)
 
-    @tickets.command(name="start")
-    async def tickets_start(self, ctx: commands.Context):
+    @ticketset.command(name="start")
+    async def ticketset_start(self, ctx: commands.Context):
         """Start the support system."""
         data = await self.config.guild(ctx.guild).all()
 
@@ -251,8 +254,8 @@ class Ticketer(commands.Cog):
         self.enabled_cache[ctx.guild.id] = True
         await ctx.tick()
 
-    @tickets.command(name="stop")
-    async def tickets_stop(self, ctx: commands.Context):
+    @ticketset.command(name="stop")
+    async def ticketset_stop(self, ctx: commands.Context):
         """Stop the support system."""
         data = await self.config.guild(ctx.guild).all()
 
@@ -268,8 +271,8 @@ class Ticketer(commands.Cog):
         await message.delete()
         await ctx.tick()
 
-    @tickets.command(name="nsfw")
-    async def tickets_nsfw(self, ctx: commands.Context, inputNSFW = ""):
+    @ticketset.command(name="nsfw")
+    async def ticketset_nsfw(self, ctx: commands.Context, inputNSFW = ""):
         """Automagically mark all created tickets as NSFW?"""
         settings = await self.config.guild(ctx.guild).markasnsfw()
         newNSFW = not settings
@@ -287,8 +290,8 @@ class Ticketer(commands.Cog):
         await ctx.send("Now marking new tickets as NSFW: {}".format(newNSFW))
 
 
-    @tickets.command(name="settings")
-    async def tickets_settings(self, ctx: commands.Context):
+    @ticketset.command(name="settings")
+    async def ticketset_settings(self, ctx: commands.Context):
         """See current settings."""
         data = await self.config.guild(ctx.guild).all()
 
@@ -330,33 +333,33 @@ class Ticketer(commands.Cog):
         embed.add_field(name="Closed ticket category*:", value=closed_category)
         embed.add_field(
             name="Registered cases:",
-            value=f"Use `{ctx.clean_prefix}tickets case all`",
+            value=f"Use `{ctx.clean_prefix}ticketset case all`",
         )
 
         await ctx.send(embed=embed)
 
-    @tickets.command(name="reset")
-    async def tickets_reset(
+    @ticketset.command(name="reset")
+    async def ticketset_reset(
         self, ctx: commands.Context, confirmation: typing.Optional[bool]
     ):
         """Erase all data and settings."""
         if not confirmation:
             return await ctx.send(
                 "This will delete **all** current data and settings. This action **cannot** be undone.\n"
-                f"If you're sure, type `{ctx.clean_prefix}tickets reset yes`."
+                f"If you're sure, type `{ctx.clean_prefix}ticketset reset yes`."
             )
         await self.config.clear_all_guilds()
         await ctx.tick()
 
-    @tickets.command(name="purge")
-    async def tickets_purge(
+    @ticketset.command(name="purge")
+    async def ticketset_purge(
         self, ctx: commands.Context, confirmation: typing.Optional[bool]
     ):
         """Deletes all closed ticket channels."""
         if not confirmation:
             return await ctx.send(
                 "This will delete **all** closed tickets. This action **cannot** be undone.\n"
-                f"If you're sure, type `{ctx.clean_prefix}tickets purge yes`."
+                f"If you're sure, type `{ctx.clean_prefix}ticketset purge yes`."
             )
         async with self.config.guild(ctx.guild).closed() as closed:
             for index, channel in enumerate(closed):
