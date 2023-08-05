@@ -1,4 +1,4 @@
-from .tickets import tickets
+from tickets import tickets
 
 async def setup(bot):
     cog = tickets(bot)
