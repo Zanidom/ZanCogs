@@ -1,6 +1,6 @@
-from tickets import tickets
+from tickets import Tickets
 
 async def setup(bot):
-    cog = tickets(bot)
+    cog = Tickets(bot)
     await bot.add_cog(cog)
     await cog.initialize()
