@@ -1,4 +1,5 @@
 from .JenTracker import JenTracker
 
-def setup(bot):
-    bot.add_cog(JenTracker(bot))
+async def setup(bot):
+    cog = JenTracker(bot)
+    await bot.add_cog(cog)
