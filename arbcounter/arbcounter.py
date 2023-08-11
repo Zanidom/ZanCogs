@@ -1,16 +1,9 @@
-from http import server
-from turtle import right
 from redbot.core import Config, commands
-
-DEFAULT_COUNTER = {
-    "value": 0
-}
 
 class ArbCounter(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, identifier=123456789011, force_registration=True)
-        self.config.register_global(**DEFAULT_COUNTER)
         default_guild = {}
         self.config.register_guild(**default_guild)
 
