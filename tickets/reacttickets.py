@@ -38,6 +38,7 @@ class ReactTickets(commands.Cog):
             closed=[],  # [channel_id, channel_id]
             cases={},  # {'emoji': {'title': 'title here', 'desc': 'description here'}}
         )
+        
 
     async def red_delete_data_for_user(self, *, requester, user_id):
         for guild in self.bot.guilds:
@@ -215,7 +216,6 @@ class ReactTickets(commands.Cog):
     async def ticketset_start(self, ctx: commands.Context):
         """Start the support system."""
         data = await self.config.guild(ctx.guild).all()
-
         
         channel = ctx.guild.get_channel(data["channel"])
         if not channel:
@@ -267,7 +267,10 @@ class ReactTickets(commands.Cog):
             return await ctx.send("Uh oh, support has not been started.")
 
         await self.config.guild(ctx.guild).enabled.set(None)
-        del self.enabled_cache[ctx.guild.id]
+        try:
+            del self.enabled_cache[ctx.guild.id]
+        except:
+            await ctx.send("Issue clearing cache")
         await message.delete()
         await ctx.tick()
 
@@ -321,7 +324,7 @@ class ReactTickets(commands.Cog):
         embed = discord.Embed(
             colour=await ctx.embed_colour(), timestamp=datetime.datetime.now()
         )
-        embed.set_author(name=ctx.guild.name)
+        embed.set_author(name=ctx.guild.name, icon_url=ctx.guild.icon)
         embed.title = "**__Reaction Tickets settings:__**"
         embed.set_footer(text="*required to function properly")
 
@@ -479,7 +482,7 @@ class ReactTickets(commands.Cog):
                 description="To close this ticket, react with 🔒 below.",
                 timestamp=datetime.datetime.utcnow(),
             )
-            embed.set_thumbnail(url=user.avatar_url)
+            embed.set_thumbnail(url=user.avatar)
             embed.set_footer(text=f"{user.name}#{user.discriminator} ({user.id})")
             embed_user_message = await user_channel.send(
                 content=f"{user.mention}, a staff member will be with you shortly.",
@@ -492,7 +495,7 @@ class ReactTickets(commands.Cog):
                 description=reason,
                 timestamp=datetime.datetime.utcnow(),
             )
-            embed.set_thumbnail(url=user.avatar_url)
+            embed.set_thumbnail(url=user.avatar)
             manager_msg = await guild.get_channel(settings["channel"]).send(
                 content=f"User: {user.mention}\nChannel: {user_channel.mention}",
                 embed=embed,
