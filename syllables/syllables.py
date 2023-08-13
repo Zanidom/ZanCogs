@@ -1,0 +1,51 @@
+from ast import alias
+from redbot.core import Config, commands
+import requests
+
+class Syllables(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+        self.version = "b0.1"
+        self.redver = "3.5.3"
+        self.config = Config.get_conf(self, identifier=1234567890, force_registration=True)
+        default_guild = {
+            "Config":{
+                "Registered":False
+                }
+            }
+        self.config.register_guild(**default_guild)
+
+    @commands.group(name="syllables", autohelp=False, aliases=['syl','syllable','sc'])
+
+    async def syllables(self, ctx, *, lastMessage = ""):
+        """Syllable counter"""
+        if ctx.invoked_subcommand is None:
+            if lastMessage == "":
+                await ctx.send("No word found.")
+                return
+        # Define the API URL with the word as a parameter
+        url = f"https://api.datamuse.com/words?sp={lastMessage}&md=s"
+
+        # Make the API request
+        response = requests.get(url)
+        nSyllables = 0;
+        # Check for a valid response
+        if response.status_code == 200:
+            data = response.json()
+            if data and 'numSyllables' in data[0]:
+                try:
+                    nSyllables = int(data[0]['numSyllables'])
+                except:
+                    await ctx.send("Invalid response received.")
+                    return
+            else:
+                await ctx.send("Invalid response received.")
+                return
+        else:
+             await ctx.send("Invalid response received.")
+             return
+
+        sylPlural = "syllables"
+        if nSyllables == 1:
+            sylPlural = "syllable"
+        await ctx.send(f"\"{lastMessage}\" has {nSyllables} {sylPlural}.")

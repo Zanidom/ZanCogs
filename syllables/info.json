@@ -1,0 +1,15 @@
+{
+    "author": ["Zan"],
+    "bot_version": "3.5.3",
+    "end_user_data_statement": "This cog does not store any end user data.",
+    "install_msg": "Thanks for installing the Syllable Counter Cog!",
+    "min_bot_version": "3.0.0",
+    "short": "A cog that gets how many syllables are in words.",
+    "description": "Looks up how many syllables are in a given word using the Datamuse API.",
+    "name": "Syllables",
+    "required_cogs": {},
+    "requirements": [],
+    "tags": ["syllables", "utility"],
+    "type": "COG",
+    "version": "1.0.0"
+}
