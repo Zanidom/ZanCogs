@@ -25,7 +25,7 @@ class ArbCounter(commands.Cog):
             serverConfig = await self.config.guild(guild).Config()
 
             indivStrings = lastMessage.split(" ")
-            if indivStrings[0] == "set":
+            if indivStrings[0].lower() == "set":
                 if len(indivStrings) < 3:
                     await ctx.send("Not enough arguments supplied.")
                     return
@@ -42,7 +42,7 @@ class ArbCounter(commands.Cog):
             mesSuffix = lastMessage[-2:]
 
             if mesSuffix == "++":
-                tokenName = lastMessage[:-2]
+                tokenName = lastMessage[:-2].lower()
                 try:
                     val = int(serverConfig[tokenName]) + 1
                     serverConfig[tokenName] = val
@@ -52,7 +52,7 @@ class ArbCounter(commands.Cog):
                 await self.config.guild(guild).Config.set(serverConfig) #save our changes
                 await ctx.send(f"`{tokenName}` is now {val}.")
             elif mesSuffix == "--":
-                tokenName = lastMessage[:-2]
+                tokenName = lastMessage[:-2].lower()
                 try:
                     val = int(serverConfig[tokenName]) - 1
                     serverConfig[tokenName] = val
@@ -65,10 +65,10 @@ class ArbCounter(commands.Cog):
 
             else:
                 try:
-                    val = int(serverConfig[lastMessage])
+                    val = int(serverConfig[lastMessage.lower()])
                 except:
                     val = 0
-                await ctx.send(f"`{lastMessage}` is {val}.")
+                await ctx.send(f"`{lastMessage.lower()}` is {val}.")
                 pass
             pass
         return True
@@ -78,9 +78,9 @@ class ArbCounter(commands.Cog):
         guild = ctx.guild
         await self.check_server_settings(guild)
         serverConfig = await self.config.guild(guild).Config()
-        serverConfig[counterToken] = value
+        serverConfig[counterToken.lower()] = value
         await self.config.guild(guild).Config.set(serverConfig) #save our changes
-        await ctx.send(f"Set `{counterToken}` to {value}.")
+        await ctx.send(f"Set `{counterToken.lower()}` to {value}.")
 
     @arbcounter.command(name="delete")
     async def ac_delete(self, ctx, counterToken: str):
