@@ -13,11 +13,11 @@ class ArbCounter(commands.Cog):
             }
         self.config.register_guild(**default_guild)
 
-    @commands.group(name="ac")
+    @commands.group(name="ac", autohelp=False)
     async def arbcounter(self, ctx, *, lastMessage = ""):
         """Arbitrary counter commands"""
         if ctx.invoked_subcommand is None:
-            if lastMessage == "" or lastMessage.len() < 2:
+            if lastMessage == "" or len(lastMessage) < 2:
                 return
 
             guild = ctx.guild
@@ -26,44 +26,53 @@ class ArbCounter(commands.Cog):
 
             indivStrings = lastMessage.split(" ")
             if indivStrings[0] == "set":
-                if indivStrings.count < 3:
+                if len(indivStrings) < 3:
                     await ctx.send("Not enough arguments supplied.")
                     return
-                await self.ac_set(self, ctx, indivStrings[1], indivStrings[2])
+                await self.ac_set(ctx, indivStrings[1], indivStrings[2])
                 return
 
             if indivStrings[0] == "delete":
-                if indivStrings.count < 2:
+                if len(indivStrings) < 2:
                     await ctx.send("Not enough arguments supplied.")
                     return
-                await self.ac_delete(self, ctx, indivStrings[1])
+                await self.ac_delete(ctx, indivStrings[1])
                 return
 
-            mesSuffix = lastMessage[-2]
+            mesSuffix = lastMessage[-2:]
 
             if mesSuffix == "++":
                 tokenName = lastMessage[:-2]
-                val = serverConfig[tokenName] + 1
-                serverConfig[tokenName] = val
+                try:
+                    val = int(serverConfig[tokenName]) + 1
+                    serverConfig[tokenName] = val
+                except:
+                    val = 1
+                    serverConfig[tokenName] = val
                 await self.config.guild(guild).Config.set(serverConfig) #save our changes
-                await ctx.send(f"{lastMessage}` is now {val}.")
+                await ctx.send(f"`{tokenName}` is now {val}.")
             elif mesSuffix == "--":
                 tokenName = lastMessage[:-2]
-                val = serverConfig[tokenName] - 1
-                serverConfig[tokenName] = val
+                try:
+                    val = int(serverConfig[tokenName]) - 1
+                    serverConfig[tokenName] = val
+                except:
+                    val = -1
+                    serverConfig[tokenName] = val
+
                 await self.config.guild(guild).Config.set(serverConfig) #save our changes
-                await ctx.send(f"{lastMessage}` is now {val}.")
+                await ctx.send(f"`{tokenName}` is now {val}.")
+
             else:
-                val = serverConfig[lastMessage]
-                if val is None:
-                    await ctx.send("This token has not been set.")
-                else:
-                    await ctx.send(f"The value of `{lastMessage}` is {val}.")
+                try:
+                    val = int(serverConfig[lastMessage])
+                except:
+                    val = 0
+                await ctx.send(f"`{lastMessage}` is {val}.")
                 pass
             pass
-        pass
-
-    @arbcounter.command(name="set")
+        return True
+    
     async def ac_set(self, ctx, counterToken: str, value: int):
         """Set a value for a counter token"""
         guild = ctx.guild

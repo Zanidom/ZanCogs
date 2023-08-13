@@ -4,7 +4,7 @@ import time
 import discord
 from discord.utils import get
 from redbot.core import commands
-from redbot.core import checks, Config, bank
+from redbot.core import checks, Config, bank, modlog
 
 class Kotr(commands.Cog):
     
