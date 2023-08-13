@@ -14,7 +14,7 @@ class ReactTickets(commands.Cog):
     Reaction based assignable support tickets with custom cases (reasons).
     """
 
-    __version__ = "1.0.6"
+    __version__ = "1.0.7"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -321,7 +321,7 @@ class ReactTickets(commands.Cog):
         embed = discord.Embed(
             colour=await ctx.embed_colour(), timestamp=datetime.datetime.now()
         )
-        embed.set_author(name=ctx.guild.name, icon_url=ctx.guild.icon_url)
+        embed.set_author(name=ctx.guild.name)
         embed.title = "**__Reaction Tickets settings:__**"
         embed.set_footer(text="*required to function properly")
 
@@ -400,14 +400,15 @@ class ReactTickets(commands.Cog):
             or payload.guild_id not in self.enabled_cache
         ):
             return
-
+        
         guild = self.bot.get_guild(payload.guild_id)
+        channel = guild.get_channel(payload.channel_id)
         settings = await self.config.guild(guild).all()
+
 
         if not settings["enabled"]:
             return
 
-        channel = guild.get_channel(payload.channel_id)
         message = await channel.fetch_message(payload.message_id)
         user = guild.get_member(payload.user_id)
 

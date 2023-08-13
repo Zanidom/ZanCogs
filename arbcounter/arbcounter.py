@@ -1,18 +1,43 @@
-from redbot.core import Config, commands
+from redbot.core import checks, Config, commands
 
 class ArbCounter(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.config = Config.get_conf(self, identifier=123456789011, force_registration=True)
-        default_guild = {}
+        self.version = "b0.1"
+        self.redver = "3.5.3"
+        self.config = Config.get_conf(self, identifier=1234567890, force_registration=True)
+        default_guild = {
+            "Config":{
+                "Registered":False
+                }
+            }
         self.config.register_guild(**default_guild)
 
     @commands.group(name="ac")
     async def arbcounter(self, ctx, *, lastMessage = ""):
         """Arbitrary counter commands"""
         if ctx.invoked_subcommand is None:
+            if lastMessage == "" or lastMessage.len() < 2:
+                return
+
             guild = ctx.guild
+            await self.check_server_settings(guild)
             serverConfig = await self.config.guild(guild).Config()
+
+            indivStrings = lastMessage.split(" ")
+            if indivStrings[0] == "set":
+                if indivStrings.count < 3:
+                    await ctx.send("Not enough arguments supplied.")
+                    return
+                await self.ac_set(self, ctx, indivStrings[1], indivStrings[2])
+                return
+
+            if indivStrings[0] == "delete":
+                if indivStrings.count < 2:
+                    await ctx.send("Not enough arguments supplied.")
+                    return
+                await self.ac_delete(self, ctx, indivStrings[1])
+                return
 
             mesSuffix = lastMessage[-2]
 
@@ -42,6 +67,7 @@ class ArbCounter(commands.Cog):
     async def ac_set(self, ctx, counterToken: str, value: int):
         """Set a value for a counter token"""
         guild = ctx.guild
+        await self.check_server_settings(guild)
         serverConfig = await self.config.guild(guild).Config()
         serverConfig[counterToken] = value
         await self.config.guild(guild).Config.set(serverConfig) #save our changes
@@ -52,6 +78,7 @@ class ArbCounter(commands.Cog):
         """Delete a counter token"""
         
         guild = ctx.guild
+        await self.check_server_settings(guild)
         serverConfig = await self.config.guild(guild).Config()
         del serverConfig[counterToken]
         await self.config.clear_raw(counterToken)
@@ -67,3 +94,10 @@ class ArbCounter(commands.Cog):
     async def ac_decrement(self, ctx, counterToken: str):
         """Decrement a counter by 1 - ac tokenname--"""
         pass
+
+    async def check_server_settings(self, guild):
+        cur = await self.config.guild(guild).Config()
+        if not cur["Registered"]:
+            cur["Registered"] = True
+            await self.config.guild(guild).Config.set(cur)
+          
