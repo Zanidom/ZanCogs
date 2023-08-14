@@ -39,6 +39,61 @@ class ReactTickets(commands.Cog):
             cases={},  # {'emoji': {'title': 'title here', 'desc': 'description here'}}
         )
         
+    @commands.Cog.listener()
+    async def on_ready(self):
+        """Event that runs when the bot is ready."""
+        for guild in self.bot.guilds:
+            enabled = await self.config.guild(guild).enabled()
+            if enabled:
+                channel_id = await self.config.guild(guild).channel()
+                channel = guild.get_channel(channel_id)
+                if channel:
+                    message_id = await self.config.guild(guild).request_channel()
+                    if message_id:
+                        try:
+                            message = await channel.fetch_message(message_id)
+                            await message.delete()
+                        except discord.NotFound:
+                            pass
+                        except discord.Forbidden:
+                            print("Permission error while trying to delete old react ticket message.")
+                    
+                    # Create a new message here (assuming there's a method called `create_react_ticket_message`)
+                    await self.create_react_ticket_message(guild)
+
+
+    async def create_react_ticket_message(self, guild: discord.Guild):
+        data = await self.config.guild(guild).all()
+        
+        adminChannel = guild.get_channel(data["channel"])
+        if not adminChannel:
+            return 
+
+        channel = guild.get_channel(data["request_channel"])
+        if not channel:
+            return await adminChannel.send("Uh oh, support is not set up properly - no request channel assigned.")
+        try:
+            message = await channel.fetch_message(data["enabled"])
+            if message:
+                await message.delete();
+        except discord.HTTPException:
+            pass
+
+
+        cases = await self.config.guild(guild).cases.get_raw()
+        description = self._get_cases_string(
+            cases, "React below with the reaction based on what you want.\n"
+        )
+
+        embed = discord.Embed(
+            colour=0xFFFFFF,
+            title=f"{guild.name} support tickets",
+            description=description,
+        )
+        msg = await channel.send(embed=embed)
+        await self._add_reactions(msg, self._get_emoji_list(cases))
+        await self.config.guild(guild).enabled.set(msg.id)
+        self.enabled_cache[guild.id] = True
 
     async def red_delete_data_for_user(self, *, requester, user_id):
         for guild in self.bot.guilds:
@@ -261,17 +316,23 @@ class ReactTickets(commands.Cog):
 
         channel = ctx.guild.get_channel(data["request_channel"])
         if not channel:
-            return await ctx.send("Uh oh, support is not set up properly - no react channel assigned.")
-        message = await channel.fetch_message(data["enabled"])
-        if not message:
-            return await ctx.send("Uh oh, support has not been started.")
+            await ctx.send("Uh oh, support is not set up properly - no react channel assigned.")
+            return 
+
+        message = ""
+        try:
+            message = await channel.fetch_message(data["enabled"])
+        except:
+            await ctx.send("Issue when fetching previous message.")
+
+        if message:
+            await message.delete()
 
         await self.config.guild(ctx.guild).enabled.set(None)
         try:
             del self.enabled_cache[ctx.guild.id]
         except:
             await ctx.send("Issue clearing cache")
-        await message.delete()
         await ctx.tick()
 
     @ticketset.command(name="nsfw")
