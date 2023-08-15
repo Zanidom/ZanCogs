@@ -473,7 +473,10 @@ class ReactTickets(commands.Cog):
         if not settings["enabled"]:
             return
 
-        message = await channel.fetch_message(payload.message_id)
+        try:
+            message = await channel.fetch_message(payload.message_id)
+        except:
+            return
         user = guild.get_member(payload.user_id)
 
         if channel.id == settings["request_channel"]:
