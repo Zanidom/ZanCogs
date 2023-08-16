@@ -1,0 +1,13 @@
+{
+  "author": [ "Zan" ],
+  "bot_version": "3.5.3",
+  "end_user_data_statement": "This cog does not store end user data.",
+  "install_msg": "Thank you for installing the bank pruning cog!",
+  "short": "A cog to prune banks for ex-users.",
+  "description": "Allows you to prune bank accounts for users no longer in the server and transfer the contents to a specified user.",
+  "name": "Bankprune",
+  "tags": [ "bankprune", "economy" ],
+  "type": "COG",
+  "version": "1.0.0",
+  "hidden": false
+}
