@@ -11,7 +11,10 @@ class Bankpruner(commands.Cog):
     @checks.admin_or_permissions(manage_guild=True)
     async def _bank_prune(self, ctx, target_member: Member = None):
         """Prune bank accounts of members no longer in the server and transfer their balance to the mentioned user."""
-               
+        if target_member is None:
+            await ctx.send("Please use ;bankprune @target to transfer pruned accounts to the target account.")
+            return
+
         _guild = ctx.guild
         group = bank._config._get_base_group(bank._config.MEMBER, str(_guild.id))
         
