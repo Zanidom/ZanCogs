@@ -288,12 +288,6 @@ class Blackjack:
     @staticmethod
     def dealer(dh):
         count = deck.bj_count(dh)
-        # forces hit if ace in first two cards without 21
-        if deck.hand_check(dh, "Ace") and count != 21:
-            deck.deal(hand=dh)
-            count = deck.bj_count(dh)
-
-        # defines maximum hit score X
         while count < 17:
             deck.deal(hand=dh)
             count = deck.bj_count(dh)
