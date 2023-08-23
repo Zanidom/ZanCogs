@@ -77,6 +77,8 @@ class BrainShop(commands.Cog):
     @commands.Cog.listener("on_message_without_command")
     async def _message_listener(self, message: discord.Message):
 
+        isResponse = message.reference
+
         # Ignore bots
         if message.author.bot:
             return
@@ -102,7 +104,8 @@ class BrainShop(commands.Cog):
             # Not in auto-channel
             if message.channel.id not in guild_settings["channels"]:
                 if (
-                        not starts_with_mention or  # Does not start with mention
+                        (isResponse is None and      
+                        not starts_with_mention) or  # Does not start with mention or reply
                         not (guild_settings["auto"] or global_auto)  # Both guild & global auto are toggled off
                 ):
                     return
