@@ -109,6 +109,9 @@ class BrainShop(commands.Cog):
                         not (guild_settings["auto"] or global_auto)  # Both guild & global auto are toggled off
                 ):
                     return
+            #If we're continuing because it's a response, validate that it's a reply to slutbot
+            if isResponse.resolved.author.id != self.bot.user.id:
+                return
 
             # Check block/allow-lists
             if (
