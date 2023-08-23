@@ -110,8 +110,9 @@ class BrainShop(commands.Cog):
                 ):
                     return
             #If we're continuing because it's a response, validate that it's a reply to slutbot
-            if isResponse.resolved.author.id != self.bot.user.id:
-                return
+            if isResponse is not None:
+                if isResponse.resolved.author.id != self.bot.user.id:
+                    return
 
             # Check block/allow-lists
             if (
