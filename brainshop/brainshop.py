@@ -22,6 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
+from asyncio.windows_events import NULL
 import re
 import aiohttp
 
@@ -83,16 +84,15 @@ class BrainShop(commands.Cog):
 
         global_auto = await self.config.auto()
         starts_with_mention = message.content.startswith((f"<@{self.bot.user.id}>", f"<@!{self.bot.user.id}>"))
+        isResponse = message.reference
 
         # Command is in DMs
         if not message.guild:
-
             if not starts_with_mention or not global_auto:
                 return
 
         # Command is in a server
         else:
-
             # Cog is disabled or bot cannot send messages in channel
             if await self.bot.cog_disabled_in_guild(self, message.guild) or not message.channel.permissions_for(message.guild.me).send_messages:
                 return
@@ -103,7 +103,8 @@ class BrainShop(commands.Cog):
             if message.channel.id not in guild_settings["channels"]:
                 if (
                         not starts_with_mention or  # Does not start with mention
-                        not (guild_settings["auto"] or global_auto)  # Both guild & global auto are toggled off
+                        not (guild_settings["auto"] or global_auto) or # Both guild & global auto are toggled off
+                        isResponse is NULL
                 ):
                     return
 
