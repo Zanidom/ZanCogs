@@ -104,7 +104,7 @@ class BrainShop(commands.Cog):
                 if (
                         not starts_with_mention or  # Does not start with mention
                         not (guild_settings["auto"] or global_auto) or # Both guild & global auto are toggled off
-                        isResponse is NULL
+                        isResponse is None
                 ):
                     return
 
