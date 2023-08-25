@@ -1,0 +1,13 @@
+{
+  "author": [ "Zan" ],
+  "bot_version": "3.5.3",
+  "end_user_data_statement": "This cog does not store end user data.",
+  "install_msg": "Thank you for installing the test buttons cog!",
+  "short": "A cog to test buttons with.",
+  "description": "Allows users to test buttons",
+  "name": "Test",
+  "tags": [ "testbuttons" ],
+  "type": "COG",
+  "version": "1.0.0",
+  "hidden": false
+}
