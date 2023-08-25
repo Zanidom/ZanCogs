@@ -1,3 +1,4 @@
+from sys import exception
 import discord
 from discord import Embed
 from redbot.core import commands
@@ -15,5 +16,9 @@ class Adminbomb(commands.Cog):
         emb.title = "Admin drive!!!!!!!!!!!"
         emb.add_field(name="", value="So, you want to try and find our supersecret drive?\nWell here's a good place to start:<pastebinlink idk>")
         emb.set_footer(text="Good luck! >:)")
-        await ctx.message.delete()
+        try:
+            await ctx.message.delete()
+        except:
+            if not isinstance(ctx.channel, discord.DMChannel):
+                return
         await ctx.author.send(embed=emb)
