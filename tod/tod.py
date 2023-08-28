@@ -416,29 +416,44 @@ class ToDView(discord.ui.View):
                 embed.add_field(name="Game starts", value=f"<t:{timestampToShow}:R>")
                 return embed
             case GameState.CHOOSING_PLAYER:
+                self.text = f"<@{currentTarget.id}>"
                 curName = currentTarget.nick
                 if curName is None:
                     curName = currentTarget.global_name
                 embed.title = titlePrefix
-                embed.add_field(name=f"<@{currentTarget.id}>", value="Please select Truth or Dare:")
+                embed.add_field(name=f"{curName}", value="Please select Truth or Dare:")
                 return embed
             case GameState.WAITING_FOR_PLAYER:
+                self.text = f"<@{currentTarget.id}>"
                 curName = currentTarget.nick
                 if curName is None:
                     curName = currentTarget.global_name
                 embed.title = titlePrefix
-                embed.add_field(name=f"<@{currentTarget.id}>", value="Please select Truth or Dare:")
+                embed.add_field(name=f"{curName}", value="Please select Truth or Dare:")
                 return embed            
             case GameState.PLAYER_HAS_CHOSEN_AWAITING_INPUT:
+                self.text = f"<@{currentChooser.id}>"
+                curName = currentTarget.nick
+                if curName is None:
+                    curName = currentTarget.global_name
+                curChooserName = None
+                try:
+                    curChooserName = currentChooser.nick
+                except:
+                    pass
+
+                if curChooserName is None:
+                    curChooserName = currentChooser.global_name
 
                 embed.title = f"{titlePrefix} - {curName} selected {choiceText}!"
                 if (gameMode == GameMode.GameMode_TrueChaos):
                     embed.add_field(name=f"Everyone", value=f"Please all provide a {choiceText} for {curName} using either the prefix \"{choiceText}:\" or the 📝 button below.\nOne will be randomly chosen from your submissions in <t:{int(time.time())+60}:R>.")
                 else:
-                    embed.add_field(name=f"<@{currentChooser.id}>", value=f"Please provide a {choiceText} for {curName} using either the prefix \"{choiceText}:\" or the 📝 below.")  
+                    embed.add_field(name=f"{curChooserName}", value=f"Please provide a {choiceText} for {curName} using either the prefix \"{choiceText}:\" or the 📝 below.")  
                 return embed
             
             case GameState.INPUT_GIVEN:
+                self.text = f"<@{currentChooser.id}>"
                 tods = ToDCog.GetCurrentToD(self.channel)
                 if tods is None:  
                     currentToD = "N/A, something went wrong."
@@ -454,7 +469,7 @@ class ToDView(discord.ui.View):
                     curChooserName = currentChooser.global_name
 
                 embed.title = f"{titlePrefix} - {curName} selected {choiceText}!"
-                embed.add_field(name=f"{choiceText.title()}:", value=f"{currentToD}\n\n<@{currentChooser.id}>, please click the ✅ or ⛔ below once {curName} has completed or failed this.")
+                embed.add_field(name=f"{choiceText.title()}:", value=f"{currentToD}\n\n{curChooserName}, please click the ✅ or ⛔ below once {curName} has completed or failed this.")
                 return embed
             case _:
                 return None
@@ -580,8 +595,16 @@ class ToDView(discord.ui.View):
 
     def GetArgs(self):
         ret: Dict[str, Optional[Any]] = {"view": self}
-        if self.embed is not None:
-            ret["embed"] = self.embed
+        try:
+            if self.embed is not None:
+                ret["embed"] = self.embed
+        except:
+            pass
+        try:
+            if self.text is not None:
+                ret["content"] = self.text
+        except:
+            pass
         return ret
 
     async def StartView(self, channel:discord.TextChannel):
