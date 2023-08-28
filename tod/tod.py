@@ -154,9 +154,10 @@ class ToDButton(discord.ui.Button):
         result = await ToDCog.TryLeavePlayer(interaction.channel, interaction.user)
         timeTilStart = ToDCog.GetTimeUntilStart(interaction.channel) 
         if result:
-            if ToDCog.TryEndGame(interaction.channel):
+            if await ToDCog.EvaluateGameEnd(interaction.channel):
                 #check if we need to end the game now.
                 await interaction.response.send_message("Not enough players left, game ending.")
+                await ToDCog.TryEndGame(interaction.channel)
                 await self.view.RefreshView()
                 return
 
@@ -419,33 +420,22 @@ class ToDView(discord.ui.View):
                 if curName is None:
                     curName = currentTarget.global_name
                 embed.title = titlePrefix
-                embed.add_field(name=f"{curName}", value="Please select Truth or Dare:")
+                embed.add_field(name=f"<@{curName}>", value="Please select Truth or Dare:")
                 return embed
             case GameState.WAITING_FOR_PLAYER:
                 curName = currentTarget.nick
                 if curName is None:
                     curName = currentTarget.global_name
                 embed.title = titlePrefix
-                embed.add_field(name=f"{curName}", value="Please select Truth or Dare:")
+                embed.add_field(name=f"<@{curName}>", value="Please select Truth or Dare:")
                 return embed            
             case GameState.PLAYER_HAS_CHOSEN_AWAITING_INPUT:
-                curName = currentTarget.nick
-                if curName is None:
-                    curName = currentTarget.global_name
-                curChooserName = None
-                try:
-                    curChooserName = currentChooser.nick
-                except:
-                    pass
-
-                if curChooserName is None:
-                    curChooserName = currentChooser.global_name
 
                 embed.title = f"{titlePrefix} - {curName} selected {choiceText}!"
                 if (gameMode == GameMode.GameMode_TrueChaos):
                     embed.add_field(name=f"Everyone", value=f"Please all provide a {choiceText} for {curName} using either the prefix \"{choiceText}:\" or the 📝 button below.\nOne will be randomly chosen from your submissions in <t:{int(time.time())+60}:R>.")
                 else:
-                    embed.add_field(name=f"{curChooserName}", value=f"Please provide a {choiceText} for {curName} using either the prefix \"{choiceText}:\" or the 📝 below.")  
+                    embed.add_field(name=f"<@{currentChooser.id}>", value=f"Please provide a {choiceText} for {curName} using either the prefix \"{choiceText}:\" or the 📝 below.")  
                 return embed
             
             case GameState.INPUT_GIVEN:
@@ -464,7 +454,7 @@ class ToDView(discord.ui.View):
                     curChooserName = currentChooser.global_name
 
                 embed.title = f"{titlePrefix} - {curName} selected {choiceText}!"
-                embed.add_field(name=f"{choiceText.title()}:", value=f"{currentToD}\n\n{curChooserName}, please click the ✅ or ⛔ below once {curName} has completed or failed this.")
+                embed.add_field(name=f"{choiceText.title()}:", value=f"{currentToD}\n\n<@{currentChooser.id}>, please click the ✅ or ⛔ below once {curName} has completed or failed this.")
                 return embed
             case _:
                 return None
@@ -482,7 +472,7 @@ class ToDView(discord.ui.View):
             self.scores = copy(ToDCog.GetScores(self.channel))
             
             #sort dict. not pretty but hey
-            {k: v for k, v in sorted(self.scores.items(), key=lambda item: item[1], reverse=True)}
+            {k: v for k, v in sorted(self.scores.items(), key=lambda item: item[1])}
 
             scoreList = ""
             for key, score in self.scores.items():
@@ -490,7 +480,7 @@ class ToDView(discord.ui.View):
                 name = nameAwait.nick
                 if name is None:
                    name = nameAwait.global_name
-                scoreList += f"{name} - {score}"
+                scoreList += f"{name}: {score}"
                 scoreList += '\n'
             if scoreList != "":
                 self.embed.insert_field_at(0, name="Scores so far:", value=scoreList, inline=False)
@@ -555,6 +545,7 @@ class ToDView(discord.ui.View):
         playerOrChooser = None
         playerOrChooserType = None
         gameState = ToDCog.GetSkippedState(self.channel)
+        await ToDCog.TryClearWasSkipped()
         try:
             if gameState == GameState.CHOOSING_PLAYER or gameState == GameState.WAITING_FOR_PLAYER:
                 playerOrChooser = ToDCog.GetCurrentToDTarget(self.channel)
@@ -1028,6 +1019,15 @@ class ToDCog(commands.Cog):
         except:
             return False
         return True
+
+    @classmethod
+    async def TryClearWasSkipped(self, channel:discord.TextChannel):
+        try:
+            game = self.games[channel.id]
+        except:
+            await channel.send("Something went wrong with the game mode.")
+            return False
+        game.wasSkipped = False
 
     @classmethod
     async def TryNextGameMode(self, channel:discord.TextChannel, player:discord.User):
