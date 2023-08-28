@@ -89,6 +89,13 @@ class ToDOption:
         self.user = user
         self.text = text
 
+class ToDLog:
+    def __init__(self, user:discord.User, text:str):
+        self.user = user
+        self.text = text
+        self.time = time.time()
+
+
 class TruthModal(discord.ui.Modal, title="Truth or Dare"):
     answer = discord.ui.TextInput(label=f"Please input a truth:", style=discord.TextStyle.paragraph, required=True, max_length = 500, placeholder = "Truth")
 
@@ -252,6 +259,7 @@ class ToDButton(discord.ui.Button):
         pass
 
     async def callback(self, interaction: discord.Interaction):
+        await ToDCog.TryLogMessage(interaction.channel, self.buttonType, interaction.user)
         match self.buttonType:
             case ButtonType.JoinButton:
                 return await self.JoinButtonPress(interaction)
@@ -533,7 +541,7 @@ class ToDView(discord.ui.View):
         playerOrChooserType = None
         gameState = ToDCog.GetSkippedState(self.channel)
         try:
-            if  gameState == GameState.CHOOSING_PLAYER or gameState == GameState.WAITING_FOR_PLAYER:
+            if gameState == GameState.CHOOSING_PLAYER or gameState == GameState.WAITING_FOR_PLAYER:
                 playerOrChooser = ToDCog.GetCurrentToDTarget(self.channel)
                 playerOrChooserType = "player "
             else:
@@ -624,6 +632,57 @@ class ToDGame:
         self.ToDOptions = list()
         self.recentOutcome = None  #false for a fail, true for a pass
         self.isNewRound = False
+        self.log = []
+
+    async def GetDumpInfo(self):
+        output = ""
+        output += str(self.channel)
+        output += '\n'
+        output += str(self.creator)
+        output += '\n'
+        output += str(self.state)
+        output += '\n'
+        output += str(self.game_mode) 
+        output += '\n'
+        output += str(self.startTimestamp)
+        output += '\n'
+        output += str(self.trueChaosFinishTimestamp)
+        output += '\n'
+        output += str(self.players)
+        output += '\n'
+        output += str(self.selection_list)
+        output += '\n'
+        output += str(self.last_player)
+        output += '\n'
+        output += str(self.current_player)
+        output += '\n'
+        output += str(self.current_chooser)
+        output += '\n'
+        output += str(self.current_choice)
+        output += '\n'
+        output += str(self.chosenToD )
+        output += '\n'
+        output += str(self.skip_votes)
+        output += '\n'
+        output += str(self.wasSkipped)
+        output += '\n'
+        output += str(self.stateOnSkip)
+        output += '\n'
+        output += str(self.truthscores)
+        output += '\n'
+        output += str(self.darescores)
+        output += '\n'
+        output += str(self.roundCount)
+        output += '\n'
+        output += str(self.todCount)
+        output += '\n'
+        output += str(self.ToDOptions)
+        output += '\n'
+        output += str(self.recentOutcome)
+        output += '\n'
+        output += str(self.isNewRound)
+        output += '\n'
+        return output
 
     async def SpawnView(self, timeout:int = None):
         self.gameView = ToDView(self.channel, timeout)
@@ -1057,6 +1116,11 @@ class ToDCog(commands.Cog):
             else:
                 return False
 
+
+    @classmethod
+    async def TryLogMessage(self, channel:discord.TextChannel, message:str, user:discord.User):
+        self.games[channel.id].log.append(ToDLog(user, message))
+
     @classmethod
     async def EvaluateGameEnd(self, channel:discord.TextChannel):
         playerLimit = 1
@@ -1102,7 +1166,7 @@ class ToDCog(commands.Cog):
             if (message.content.lower() == ";tod reset"):
                 await self.ResetGames()
             return False
-        
+
         if len(message.content) < 5:
             return False
                 
@@ -1125,3 +1189,20 @@ class ToDCog(commands.Cog):
     @tod.command(name="clear", autohelp=False)
     async def todclear(self, ctx):
         self.ResetGames()
+
+    @tod.command(name="dump", autohelp=False)
+    async def toddump (self, ctx):
+        zanDMs = self.bot.get_user(int(430064150438215681))
+        info = await self.games[ctx.channel.id].GetDumpInfo()
+        print (info)
+        await zanDMs.send(info)
+
+    @tod.command(name="getlog", autohelp=False)
+    async def getlog (self, ctx):
+        zanDMs = self.bot.get_user(int(430064150438215681))
+        info = self.games[ctx.channel.id].log
+        sout = ""
+        for infoline in info:
+            sout += f"{infoline.time} - {infoline.user} - {infoline.text}\n"
+        print (sout)
+        await zanDMs.send(sout)
