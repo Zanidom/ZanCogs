@@ -605,7 +605,7 @@ class ToDGame:
         self.creator = gameMaker
         self.state = GameState.GAME_STARTING
         self.game_mode = GameMode.GameMode_Round
-        self.startTimestamp = int(time.time()) + 10
+        self.startTimestamp = int(time.time()) + 30
         self.trueChaosFinishTimestamp = int(time.time())
         self.players = []
         self.selection_list = []
