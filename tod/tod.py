@@ -1,10 +1,12 @@
 import time
 import array
 import random
+import trace
 import discord
 import redbot.core
 from enum import Enum
 from copy import copy
+import traceback
 from typing import Dict, Optional, Any
 from redbot.core import commands, Config
 
@@ -102,9 +104,12 @@ class TruthModal(discord.ui.Modal, title="Truth or Dare"):
     async def on_submit(self, interaction:discord.Interaction):
         await interaction.response.defer()
 
+        gameMode = ToDCog.GetGameMode(interaction.channel)
         timeTilChaos = ToDCog.GetTimeUntilChaos(interaction.channel)
+
         result = await ToDCog.TryAddToD(interaction.channel, self.answer.value, interaction.user)
-        await ToDCog.RefreshView(interaction.channel, timeTilChaos)
+        if gameMode == GameMode.GameMode_Chaos:
+            await ToDCog.RefreshView(interaction.channel, timeTilChaos)
         if not result:
             await interaction.followup.send(f"Something went wrong with your input:\n{self.answer.value}\nPlease try again.", ephemeral=True)
 
@@ -114,9 +119,12 @@ class DareModal(discord.ui.Modal, title="Truth or Dare"):
     async def on_submit(self, interaction:discord.Interaction):
         await interaction.response.defer()
 
+        gameMode = ToDCog.GetGameMode(interaction.channel)
         timeTilChaos = ToDCog.GetTimeUntilChaos(interaction.channel)
         result = await ToDCog.TryAddToD(interaction.channel, self.answer.value, interaction.user)
-        await ToDCog.RefreshView(interaction.channel, timeTilChaos)
+        
+        if gameMode == GameMode.GameMode_Chaos:
+            await ToDCog.RefreshView(interaction.channel, timeTilChaos)
         if not result:
             await interaction.followup.send(f"Something went wrong with your input:\n{self.answer.value}\nPlease try again.", ephemeral=True)
 
@@ -133,7 +141,8 @@ class ToDButton(discord.ui.Button):
             if ToDCog.GetGameState(interaction.channel) == GameState.GAME_STARTING:  #refresh the player list
                 await self.view.UpdateView(interaction, ToDCog.GetTimeUntilStart(interaction.channel))
             else:
-                await interaction.response.defer()
+                await interaction.response.send_message(f"{interaction.user.global_name} joined.")
+                await self.view.RefreshView()
         else:
             await interaction.response.send_message("You're already playing!",ephemeral=True)
             if ToDCog.GetGameState(interaction.channel) == GameState.GAME_STARTING:
@@ -147,7 +156,8 @@ class ToDButton(discord.ui.Button):
         if result:
             if ToDCog.TryEndGame(interaction.channel):
                 #check if we need to end the game now.
-                interaction.response.defer()
+                await interaction.response.send_message("Not enough players left, game ending.")
+                await self.view.RefreshView()
                 return
 
             if ToDCog.GetGameState(interaction.channel) == GameState.GAME_STARTING:  #refresh the player list
@@ -159,10 +169,12 @@ class ToDButton(discord.ui.Button):
                 if interaction.user == curPlayer or interaction.user == curChooser:
                     result = await ToDCog.TrySetGameState(GameState.INPUT_COMPLETE)
                     if not result:
-                        interaction.response.defer()
+                        await interaction.response.send_message(f"{interaction.user.global_name} left.")
+                        await self.view.RefreshView()
                         return
                     else:
-                        interaction.response.send_message("Someone left while they were in play - resetting to choosing player")
+                        await interaction.response.send_message("Someone left while they were in play - resetting to choosing player")
+                        await self.view.RefreshView()
                         return
         else:
             await interaction.response.send_message("You're not playing yet!",ephemeral=True)
@@ -525,7 +537,10 @@ class ToDView(discord.ui.View):
     async def RefreshView(self, timeOut:int = None):
         self.timeout = timeOut
         args = self.GetArgs()
-        await self.message.edit(**args)
+        if self.message is not None:
+            await self.message.edit(**args)
+        else:
+            await self.channel.send(**args)
 
     async def NotEnoughPlayersView(self):
         self.clear_items()
@@ -561,6 +576,7 @@ class ToDView(discord.ui.View):
             await self.message.edit(**args)
         except:
             pass
+
     async def MakeInert(self):
         if (self.inert):    #prevent inertion more than once
             return
@@ -613,7 +629,7 @@ class ToDGame:
         self.creator = gameMaker
         self.state = GameState.GAME_STARTING
         self.game_mode = GameMode.GameMode_Round
-        self.startTimestamp = int(time.time()) + 30
+        self.startTimestamp = int(time.time()) + 8
         self.trueChaosFinishTimestamp = int(time.time())
         self.players = []
         self.selection_list = []
@@ -707,7 +723,7 @@ class ToDGame:
     async def ChoosingPlayer(self):
         if self.current_player is not None:
             self.last_player = self.current_player
-        
+
         curSelList = copy(self.selection_list)
         if len(curSelList) > 1:
             try:
@@ -718,8 +734,10 @@ class ToDGame:
         self.current_choice = ToDChoice.NoChoiceYet
         self.current_player = random.choice(curSelList)
         self.state = GameState.WAITING_FOR_PLAYER
+        await self.gameView.MakeInert()
         await self.OnStateChange()
         await self.SpawnView()
+
 
     async def ChooseChooser(self):
         choicePool = copy(self.players)
@@ -1194,7 +1212,6 @@ class ToDCog(commands.Cog):
     async def toddump (self, ctx):
         zanDMs = self.bot.get_user(int(430064150438215681))
         info = await self.games[ctx.channel.id].GetDumpInfo()
-        print (info)
         await zanDMs.send(info)
 
     @tod.command(name="getlog", autohelp=False)
@@ -1204,5 +1221,4 @@ class ToDCog(commands.Cog):
         sout = ""
         for infoline in info:
             sout += f"{infoline.time} - {infoline.user} - {infoline.text}\n"
-        print (sout)
         await zanDMs.send(sout)
