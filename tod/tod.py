@@ -160,14 +160,17 @@ class ToDButton(discord.ui.Button):
             else:
                 curPlayer = ToDCog.GetCurrentToDTarget(interaction.channel)
                 curChooser = ToDCog.GetCurrentToDChooser(interaction.channel)
+                
+                curName = interaction.user.nick
+                if curName is None:
+                    curName = interaction.user.global_name
+
                 if interaction.user == curPlayer or interaction.user == curChooser:
-                    await interaction.response.send_message("Someone left while they were in play - resetting to choosing player")
+                    await interaction.response.send_message(f"{curName} left while they were in play - resetting to choosing player")
                     await ToDCog.TrySetGameState(GameState.INPUT_COMPLETE)
                 else:
-                    curName = curPlayer.nick
-                    if curName is None:
-                        curName = curPlayer.global_name
                     await interaction.response.send_message(f"{curName} left.")
+                    
                 if await ToDCog.EvaluateGameEnd(interaction.channel):
                     #check if we need to end the game now.
                     await interaction.followup.send("Not enough players left, game ending.")
@@ -431,7 +434,7 @@ class ToDView(discord.ui.View):
                 embed.add_field(name=f"{curName}", value="Please select Truth or Dare:")
                 return embed            
             case GameState.PLAYER_HAS_CHOSEN_AWAITING_INPUT:
-                self.text = f"<@{currentChooser.id}>"
+                self.text = f"<@{currentChooser.id}>, <@{currentTarget.id}>"
                 curName = currentTarget.nick
                 if curName is None:
                     curName = currentTarget.global_name
@@ -778,7 +781,10 @@ class ToDGame:
         self.ToDOptions.clear()
         await self.SpawnView()
         
-    async def InputComplete(self):   
+    async def InputComplete(self): 
+        if (await self.EvaluateGameEnd()):
+            return True
+        
         self.todCount += 1
         if self.wasSkipped:
             try:
@@ -839,6 +845,14 @@ class ToDGame:
                 case _:
                     return False
         return True   #returns true if half+ voted to skip
+
+    async def EvaluateGameEnd(self):
+        playerLimit = 1
+        if self.state == GameState.GAME_STARTING:
+            playerLimit -= 1
+        if len(self.players) <= playerLimit:
+            return True
+        return False
 
     async def ToggleSkip(self, user:discord.User):
         try:
@@ -1163,11 +1177,8 @@ class ToDCog(commands.Cog):
 
     @classmethod
     async def EvaluateGameEnd(self, channel:discord.TextChannel):
-        playerLimit = 1
-        if ToDCog.GetGameState(channel) == GameState.GAME_STARTING:
-            playerLimit -= 1
-        if len(ToDCog.GetPlayerList(channel)) <= playerLimit:
-            return await ToDCog.TryEndGame(channel)
+        if await self.games[channel.id].EvaluateGameEnd():
+            await ToDCog.TryEndGame(self.channel)
 
     @classmethod
     async def ProcessSkipState(self, channel:discord.TextChannel):
