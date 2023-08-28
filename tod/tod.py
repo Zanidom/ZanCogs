@@ -420,14 +420,14 @@ class ToDView(discord.ui.View):
                 if curName is None:
                     curName = currentTarget.global_name
                 embed.title = titlePrefix
-                embed.add_field(name=f"<@{curName}>", value="Please select Truth or Dare:")
+                embed.add_field(name=f"<@{currentTarget.id}>", value="Please select Truth or Dare:")
                 return embed
             case GameState.WAITING_FOR_PLAYER:
                 curName = currentTarget.nick
                 if curName is None:
                     curName = currentTarget.global_name
                 embed.title = titlePrefix
-                embed.add_field(name=f"<@{curName}>", value="Please select Truth or Dare:")
+                embed.add_field(name=f"<@{currentTarget.id}>", value="Please select Truth or Dare:")
                 return embed            
             case GameState.PLAYER_HAS_CHOSEN_AWAITING_INPUT:
 
