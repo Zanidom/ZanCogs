@@ -154,33 +154,32 @@ class ToDButton(discord.ui.Button):
         result = await ToDCog.TryLeavePlayer(interaction.channel, interaction.user)
         timeTilStart = ToDCog.GetTimeUntilStart(interaction.channel) 
         if result:
-            if await ToDCog.EvaluateGameEnd(interaction.channel):
-                #check if we need to end the game now.
-                await interaction.response.send_message("Not enough players left, game ending.")
-                await ToDCog.TryEndGame(interaction.channel)
-                await self.view.RefreshView()
-                return
-
-            if ToDCog.GetGameState(interaction.channel) == GameState.GAME_STARTING:  #refresh the player list
+            #successful leave. Make sure they were irrelevant
+            if ToDCog.GetGameState(interaction.channel) == GameState.GAME_STARTING:  #refresh the player list if we're just starting the game
                 await self.view.UpdateView(interaction, timeTilStart)
             else:
                 curPlayer = ToDCog.GetCurrentToDTarget(interaction.channel)
                 curChooser = ToDCog.GetCurrentToDChooser(interaction.channel)
-
                 if interaction.user == curPlayer or interaction.user == curChooser:
-                    result = await ToDCog.TrySetGameState(GameState.INPUT_COMPLETE)
-                    if not result:
-                        await interaction.response.send_message(f"{interaction.user.global_name} left.")
-                        await self.view.RefreshView()
-                        return
-                    else:
-                        await interaction.response.send_message("Someone left while they were in play - resetting to choosing player")
-                        await self.view.RefreshView()
-                        return
+                    await interaction.response.send_message("Someone left while they were in play - resetting to choosing player")
+                    await ToDCog.TrySetGameState(GameState.INPUT_COMPLETE)
+                else:
+                    curName = curPlayer.nick
+                    if curName is None:
+                        curName = curPlayer.global_name
+                    await interaction.response.send_message(f"{curName} left.")
+                if await ToDCog.EvaluateGameEnd(interaction.channel):
+                    #check if we need to end the game now.
+                    await interaction.followup.send("Not enough players left, game ending.")
+                    await ToDCog.TryEndGame(interaction.channel)
+                    await self.view.RefreshView()
+                    return
+
         else:
             await interaction.response.send_message("You're not playing yet!",ephemeral=True)
-            await self.view.RefreshView(timeTilStart)
-        return
+            if ToDCog.GetGameState(interaction.channel) == GameState.GAME_STARTING:  #refresh the player list
+                await self.view.UpdateView(interaction, timeTilStart)
+
 
     async def SkipButtonPress(self, interaction: discord.Interaction):
         result = await ToDCog.TryToggleSkip(interaction.channel, interaction.user)
