@@ -164,19 +164,19 @@ class ToDButton(discord.ui.Button):
                 curName = interaction.user.nick
                 if curName is None:
                     curName = interaction.user.global_name
-
-                if interaction.user == curPlayer or interaction.user == curChooser:
-                    await interaction.response.send_message(f"{curName} left while they were in play - resetting to choosing player")
-                    await ToDCog.TrySetGameState(interaction.channel, GameState.INPUT_COMPLETE)
-                else:
-                    await interaction.response.send_message(f"{curName} left.")
                     
                 if await ToDCog.EvaluateGameEnd(interaction.channel):
                     #check if we need to end the game now.
-                    await interaction.followup.send("Not enough players left, game ending.")
-                    await ToDCog.TryEndGame(interaction.channel)
-                    await self.view.RefreshView()
-                    return
+                        await interaction.response.send("Not enough players left, game ending.")
+                        await ToDCog.TryEndGame(interaction.channel)
+                        await self.view.RefreshView()
+                        return
+                else:
+                    if interaction.user == curPlayer or interaction.user == curChooser:
+                        await interaction.response.send_message(f"{curName} left while they were in play - resetting to choosing player")
+                        await ToDCog.TrySetGameState(interaction.channel, GameState.INPUT_COMPLETE)
+                    else:
+                        await interaction.response.send_message(f"{curName} left.")
 
         else:
             await interaction.response.send_message("You're not playing yet!",ephemeral=True)
