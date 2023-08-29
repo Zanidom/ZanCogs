@@ -263,16 +263,20 @@ class ToDButton(discord.ui.Button):
             return
 
     async def AddAnswerButton(self, interaction:discord.Interaction):
-        ToDReceiver = ToDCog.GetCurrentToDTarget()
+        ToDReceiver = ToDCog.GetCurrentToDTarget(interaction.channel)
         ToDGiver = ToDCog.GetCurrentToDChooser(interaction.channel)
         ToDText = ToDCog.GetChoiceAsString(interaction.channel)
-
+        todGameMode = ToDCog.GetGameMode(interaction.channel)
+        if todGameMode == GameMode.GameMode_TrueChaos:
+            timeTilExpire = ToDCog.GetTimeUntilChaos(interaction.channel)
+        else:
+            timeTilExpire = None
         
         if interaction.user == ToDReceiver:
             await interaction.response.send_message(f"You're can't give yourself a {ToDText}!",ephemeral=True)
-            await ToDCog.RefreshView(self.channel)
+            await ToDCog.RefreshView(self.channel, timeTilExpire)
             return
-        if interaction.user != ToDGiver and ToDCog.GetGameMode != GameMode.GameMode_TrueChaos:
+        if interaction.user != ToDGiver and todGameMode != GameMode.GameMode_TrueChaos:
             await interaction.response.send_message(f"You're not the {ToDText} giver! Wait your turn.",ephemeral=True)
             await ToDCog.RefreshView(self.channel)
             return
@@ -780,7 +784,7 @@ class ToDGame:
 
     async def InputGiven(self):
         if len(self.ToDOptions) == 0:
-            self.gameView.RefreshView(60)
+            await self.gameView.RefreshView(60)
         elif len(self.ToDOptions) == 1:
             self.chosenToD = copy(self.ToDOptions[0])
         else:
