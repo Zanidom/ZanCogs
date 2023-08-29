@@ -167,7 +167,7 @@ class ToDButton(discord.ui.Button):
 
                 if interaction.user == curPlayer or interaction.user == curChooser:
                     await interaction.response.send_message(f"{curName} left while they were in play - resetting to choosing player")
-                    await ToDCog.TrySetGameState(GameState.INPUT_COMPLETE)
+                    await ToDCog.TrySetGameState(interaction.channel, GameState.INPUT_COMPLETE)
                 else:
                     await interaction.response.send_message(f"{curName} left.")
                     
@@ -434,7 +434,7 @@ class ToDView(discord.ui.View):
                 embed.add_field(name=f"{curName}", value="Please select Truth or Dare:")
                 return embed            
             case GameState.PLAYER_HAS_CHOSEN_AWAITING_INPUT:
-                self.text = f"<@{currentChooser.id}>, <@{currentTarget.id}>"
+                self.text = f"<@{currentChooser.id}>"
                 curName = currentTarget.nick
                 if curName is None:
                     curName = currentTarget.global_name
@@ -455,7 +455,7 @@ class ToDView(discord.ui.View):
                 return embed
             
             case GameState.INPUT_GIVEN:
-                self.text = f"<@{currentChooser.id}>"
+                self.text = f"<@{currentChooser.id}>, <@{currentTarget.id}>"
                 tods = ToDCog.GetCurrentToD(self.channel)
                 if tods is None:  
                     currentToD = "N/A, something went wrong."
@@ -471,7 +471,7 @@ class ToDView(discord.ui.View):
                     curChooserName = currentChooser.global_name
 
                 embed.title = f"{titlePrefix} - {curName} selected {choiceText}!"
-                embed.add_field(name=f"{choiceText.title()}:", value=f"{currentToD}\n\n{curChooserName}, please click the ✅ or ⛔ below once {curName} has completed or failed this.")
+                embed.add_field(name=f"{choiceText.title()}:", value=f"{currentToD}\n\n{curChooserName}, please click the ✅ or ⛔ below once {curName} has passed or failed.")
                 return embed
             case _:
                 return None
@@ -498,7 +498,7 @@ class ToDView(discord.ui.View):
                 if name is None:
                    name = nameAwait.global_name
                 scoreList += f"{name}: {score}"
-                scoreList += '\n'
+                scoreList += '\n\n\n'
             if scoreList != "":
                 self.embed.insert_field_at(0, name="Scores so far:", value=scoreList, inline=False)
             await ToDCog.TryClearIsNewRound(self.channel)
