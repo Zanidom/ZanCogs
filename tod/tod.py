@@ -263,10 +263,18 @@ class ToDButton(discord.ui.Button):
             return
 
     async def AddAnswerButton(self, interaction:discord.Interaction):
+        ToDReceiver = ToDCog.GetCurrentToDTarget()
         ToDGiver = ToDCog.GetCurrentToDChooser(interaction.channel)
         ToDText = ToDCog.GetChoiceAsString(interaction.channel)
-        if interaction.user != ToDGiver:
+
+        
+        if interaction.user == ToDReceiver:
+            await interaction.response.send_message(f"You're can't give yourself a {ToDText}!",ephemeral=True)
+            await ToDCog.RefreshView(self.channel)
+            return
+        if interaction.user != ToDGiver and ToDCog.GetGameMode != GameMode.GameMode_TrueChaos:
             await interaction.response.send_message(f"You're not the {ToDText} giver! Wait your turn.",ephemeral=True)
+            await ToDCog.RefreshView(self.channel)
             return
 
         modal = TruthModal() if ToDText == "truth" else DareModal()
