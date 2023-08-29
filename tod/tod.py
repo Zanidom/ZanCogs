@@ -283,6 +283,7 @@ class ToDButton(discord.ui.Button):
 
         modal = TruthModal() if ToDText == "truth" else DareModal()
         await interaction.response.send_modal(modal)
+        await ToDCog.RefreshView(self.channel)
         pass
 
     async def callback(self, interaction: discord.Interaction):
@@ -461,7 +462,7 @@ class ToDView(discord.ui.View):
 
                 embed.title = f"{titlePrefix} - {curName} selected {choiceText}!"
                 if (gameMode == GameMode.GameMode_TrueChaos):
-                    embed.add_field(name=f"Everyone", value=f"Please all provide a {choiceText} for {curName} using either the prefix \"{choiceText}:\" or the 📝 button below.\nOne will be randomly chosen from your submissions in <t:{int(time.time())+60}:R>.")
+                    embed.add_field(name=f"Everyone", value=f"Please all provide a {choiceText} for {curName} using either the prefix \"{choiceText}:\" or the 📝 button below.\nOne will be randomly chosen from your submissions in <t:{int(time.time())+120}:R>.")
                 else:
                     embed.add_field(name=f"{curChooserName}", value=f"Please provide a {choiceText} for {curName} using either the prefix \"{choiceText}:\" or the 📝 below.")  
                 return embed
@@ -775,16 +776,16 @@ class ToDGame:
     async def PlayerChoseToD(self):
         await self.gameView.MakeInert()
         if self.game_mode == GameMode.GameMode_TrueChaos:
-            self.trueChaosFinishTimestamp = int(time.time() + 60)
+            self.trueChaosFinishTimestamp = int(time.time() + 120)
             await self.ChooseChooser()  #prevent error by making this have a value lmao
-            await self.SpawnView(60)
+            await self.SpawnView(120)
         else:
             await self.ChooseChooser()
             await self.SpawnView()
 
     async def InputGiven(self):
         if len(self.ToDOptions) == 0:
-            await self.gameView.RefreshView(60)
+            await self.gameView.RefreshView(120)
         elif len(self.ToDOptions) == 1:
             self.chosenToD = copy(self.ToDOptions[0])
         else:
