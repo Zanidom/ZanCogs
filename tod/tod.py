@@ -1057,15 +1057,12 @@ class ToDCog(commands.Cog):
             await channel.send("Something went wrong with the game mode.")
             return False
 
-        if player not in game.players:
-            return False
-        
-        try:
-            game.players.remove(player)
-            if game.game_mode == GameMode.GameMode_Chaos or game.game_mode == GameMode.GameMode_TrueChaos:
+        if player in game.players:
+            try:
+                game.players.remove(player)
                 game.selection_list.remove(player)
-        except:
-            return False
+            except:
+                return False
         return True
 
     @classmethod
