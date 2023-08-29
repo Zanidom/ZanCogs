@@ -108,7 +108,7 @@ class TruthModal(discord.ui.Modal, title="Truth or Dare"):
         timeTilChaos = ToDCog.GetTimeUntilChaos(interaction.channel)
 
         result = await ToDCog.TryAddToD(interaction.channel, self.answer.value, interaction.user)
-        if gameMode == GameMode.GameMode_Chaos:
+        if gameMode == GameMode.GameMode_TrueChaos:
             await ToDCog.RefreshView(interaction.channel, timeTilChaos)
         if not result:
             await interaction.followup.send(f"Something went wrong with your input:\n{self.answer.value}\nPlease try again.", ephemeral=True)
@@ -123,7 +123,7 @@ class DareModal(discord.ui.Modal, title="Truth or Dare"):
         timeTilChaos = ToDCog.GetTimeUntilChaos(interaction.channel)
         result = await ToDCog.TryAddToD(interaction.channel, self.answer.value, interaction.user)
         
-        if gameMode == GameMode.GameMode_Chaos:
+        if gameMode == GameMode.GameMode_TrueChaos:
             await ToDCog.RefreshView(interaction.channel, timeTilChaos)
         if not result:
             await interaction.followup.send(f"Something went wrong with your input:\n{self.answer.value}\nPlease try again.", ephemeral=True)
