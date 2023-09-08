@@ -88,11 +88,13 @@ class ToDChoice(Enum):
 
 class ToDOption:
     def __init__(self, user:discord.User, text:str):
+        print('ToDOption')
         self.user = user
         self.text = text
 
 class ToDLog:
     def __init__(self, user:discord.User, text:str):
+        print('ToDLog')
         self.user = user
         self.text = text
         self.time = time.time()
@@ -102,6 +104,7 @@ class TruthModal(discord.ui.Modal, title="Truth or Dare"):
     answer = discord.ui.TextInput(label=f"Please input a truth:", style=discord.TextStyle.paragraph, required=True, max_length = 500, placeholder = "Truth")
 
     async def on_submit(self, interaction:discord.Interaction):
+        print('on_submit')
         await interaction.response.defer()
 
         gameMode = ToDCog.GetGameMode(interaction.channel)
@@ -117,6 +120,7 @@ class DareModal(discord.ui.Modal, title="Truth or Dare"):
     answer = discord.ui.TextInput(label=f"Please input a dare:", style=discord.TextStyle.paragraph, required=True, max_length = 500, placeholder = "Dare")
 
     async def on_submit(self, interaction:discord.Interaction):
+        print('on_submit')
         await interaction.response.defer()
 
         gameMode = ToDCog.GetGameMode(interaction.channel)
@@ -130,18 +134,23 @@ class DareModal(discord.ui.Modal, title="Truth or Dare"):
 
 class ToDButton(discord.ui.Button):
     def __init__(self, channel:discord.TextChannel, buttonType:ButtonType):
+        print('ToDButton')
         emoji = self.GetButtonEmoji(buttonType, channel)
         super().__init__(label=self.GetButtonText(buttonType),emoji=emoji, row=self.GetButtonRow(buttonType))
         self.buttonType = buttonType
         self.channel = channel
 
     async def JoinButtonPress(self, interaction: discord.Interaction):
+        print('JoinButtonPress')
         result = await ToDCog.TryJoinPlayer(interaction.channel, interaction.user)
         if result:
             if ToDCog.GetGameState(interaction.channel) == GameState.GAME_STARTING:  #refresh the player list
                 await self.view.UpdateView(interaction, ToDCog.GetTimeUntilStart(interaction.channel))
             else:
-                await interaction.response.send_message(f"{interaction.user.global_name} joined.")
+                name = interaction.user.nick
+                if name is None:
+                    name = interaction.user.global_name
+                await interaction.response.send_message(f"{name} joined.")
                 await self.view.RefreshView()
         else:
             await interaction.response.send_message("You're already playing!",ephemeral=True)
@@ -150,6 +159,7 @@ class ToDButton(discord.ui.Button):
         return
 
     async def LeaveButtonPress(self, interaction: discord.Interaction):
+        print('LeaveButtonPress')
         #todo finish logic for if they leave and they're the current chooser or tod-er
         result = await ToDCog.TryLeavePlayer(interaction.channel, interaction.user)
         timeTilStart = ToDCog.GetTimeUntilStart(interaction.channel) 
@@ -157,6 +167,7 @@ class ToDButton(discord.ui.Button):
             #successful leave. Make sure they were irrelevant
             if ToDCog.GetGameState(interaction.channel) == GameState.GAME_STARTING:  #refresh the player list if we're just starting the game
                 await self.view.UpdateView(interaction, timeTilStart)
+                return
             else:
                 curPlayer = ToDCog.GetCurrentToDTarget(interaction.channel)
                 curChooser = ToDCog.GetCurrentToDChooser(interaction.channel)
@@ -166,17 +177,20 @@ class ToDButton(discord.ui.Button):
                     curName = interaction.user.global_name
                     
                 if await ToDCog.EvaluateGameEnd(interaction.channel):
+                    print("Outcome 1")
                     #check if we need to end the game now.
-                        await interaction.response.send("Not enough players left, game ending.")
-                        await ToDCog.TryEndGame(interaction.channel)
-                        await self.view.RefreshView()
-                        return
+                    await interaction.response.send_message(f"{curName} left. Not enough players left, game ending.")
+                    await self.view.RefreshView()
+                    return
                 else:
+                    print("Outcome 2")
                     if interaction.user == curPlayer or interaction.user == curChooser:
                         await interaction.response.send_message(f"{curName} left while they were in play - resetting to choosing player")
                         await ToDCog.TrySetGameState(interaction.channel, GameState.INPUT_COMPLETE)
                     else:
                         await interaction.response.send_message(f"{curName} left.")
+
+
 
         else:
             await interaction.response.send_message("You're not playing yet!",ephemeral=True)
@@ -185,6 +199,7 @@ class ToDButton(discord.ui.Button):
 
 
     async def SkipButtonPress(self, interaction: discord.Interaction):
+        print('SkipButtonPress')
         result = await ToDCog.TryToggleSkip(interaction.channel, interaction.user)
         await interaction.response.defer()  #don't update 
         if not result:
@@ -193,6 +208,7 @@ class ToDButton(discord.ui.Button):
             await ToDCog.ProcessSkipState(interaction.channel)
     
     async def GameModeButtonPress(self, interaction:discord.Interaction):
+        print('GameModeButtonPress')
         temp = await ToDCog.TryNextGameMode(interaction.channel, interaction.user)
         timeTilStart = ToDCog.GetTimeUntilStart(interaction.channel) 
 
@@ -204,6 +220,7 @@ class ToDButton(discord.ui.Button):
         await self.view.UpdateView(interaction, timeTilStart)
         
     async def TruthButtonPress(self, interaction:discord.Interaction):
+        print('TruthButtonPress')
         ToDee = ToDCog.GetCurrentToDTarget(interaction.channel)
         if interaction.user != ToDee:
             await interaction.response.send_message("You're not the current target! Wait your turn.",ephemeral=True)
@@ -222,6 +239,7 @@ class ToDButton(discord.ui.Button):
             return
 
     async def DareButtonPress(self, interaction:discord.Interaction):
+        print('DareButtonPress')
         ToDee = ToDCog.GetCurrentToDTarget(interaction.channel)
         if interaction.user != ToDee:
             await interaction.response.send_message("You're not the current target! Wait your turn.",ephemeral=True)
@@ -237,6 +255,7 @@ class ToDButton(discord.ui.Button):
             return
 
     async def PassButton(self, interaction:discord.Interaction):
+        print('PassButton')
         ToDGiver = ToDCog.GetCurrentToDChooser(interaction.channel)
         ToDText = ToDCog.GetChoiceAsString(interaction.channel)
         await interaction.response.defer()
@@ -250,6 +269,7 @@ class ToDButton(discord.ui.Button):
             return
 
     async def FailButton(self, interaction:discord.Interaction):
+        print('FailButton')
         ToDGiver = ToDCog.GetCurrentToDChooser(interaction.channel)
         ToDText = ToDCog.GetChoiceAsString(interaction.channel)
         await interaction.response.defer()
@@ -263,6 +283,7 @@ class ToDButton(discord.ui.Button):
             return
 
     async def AddAnswerButton(self, interaction:discord.Interaction):
+        print('AddAnswerButton')
         ToDReceiver = ToDCog.GetCurrentToDTarget(interaction.channel)
         ToDGiver = ToDCog.GetCurrentToDChooser(interaction.channel)
         ToDText = ToDCog.GetChoiceAsString(interaction.channel)
@@ -287,7 +308,7 @@ class ToDButton(discord.ui.Button):
         pass
 
     async def callback(self, interaction: discord.Interaction):
-        await ToDCog.TryLogMessage(interaction.channel, self.buttonType, interaction.user)
+        print('callback')
         match self.buttonType:
             case ButtonType.JoinButton:
                 return await self.JoinButtonPress(interaction)
@@ -396,6 +417,7 @@ class ToDButton(discord.ui.Button):
 
 class ToDView(discord.ui.View):
     def __init__(self, channel:discord.TextChannel, waitTime:int = None):
+        print('ToDView')
         super().__init__(timeout=waitTime)
         self.embed = None
         self.channel = channel
@@ -403,6 +425,7 @@ class ToDView(discord.ui.View):
 
 
     def GetEmbedContent(self):
+        print('GetEmbedContent')
         embed = discord.Embed()
         gameMode = ToDCog.GetGameMode(self.channel)
         currentTarget = ToDCog.GetCurrentToDTarget(self.channel)
@@ -490,6 +513,7 @@ class ToDView(discord.ui.View):
                 return None
    
     async def CreateView(self):
+        print('CreateView')
         #First, empty this view.
         self.embed = None
         self.clear_items()
@@ -510,8 +534,8 @@ class ToDView(discord.ui.View):
                 name = nameAwait.nick
                 if name is None:
                    name = nameAwait.global_name
-                scoreList += f"{name}: {score}"
-                scoreList += '\n\n\n'
+                scoreList += f"{name}: {score}\n"
+            scoreList += '\n\n'
             if scoreList != "":
                 self.embed.insert_field_at(0, name="Scores so far:", value=scoreList, inline=False)
             await ToDCog.TryClearIsNewRound(self.channel)
@@ -549,12 +573,14 @@ class ToDView(discord.ui.View):
                 return
             
     async def UpdateView(self, interaction: discord.Interaction, timeOut:int = None):
+        print('UpdateView')
         await self.CreateView()
         self.timeout = timeOut
         args = self.GetArgs()
         await interaction.response.edit_message(**args)
 
     async def RefreshView(self, timeOut:int = None):
+        print('RefreshView')
         self.timeout = timeOut
         args = self.GetArgs()
         if self.message is not None:
@@ -563,6 +589,7 @@ class ToDView(discord.ui.View):
             await self.channel.send(**args)
 
     async def NotEnoughPlayersView(self):
+        print('NotEnoughPlayersView')
         self.clear_items()
         self.embed = discord.Embed()
         self.embed.title = "Not enough players, exited ToD."
@@ -570,6 +597,7 @@ class ToDView(discord.ui.View):
         await self.message.edit(**args)
 
     async def SkipView(self):
+        print('SkipView')
         self.clear_items()
         self.embed = discord.Embed()
         playerOrChooser = None
@@ -599,6 +627,7 @@ class ToDView(discord.ui.View):
             pass
 
     async def MakeInert(self):
+        print('MakeInert')
         if (self.inert):    #prevent inertion more than once
             return
         self.inert = True
@@ -609,6 +638,7 @@ class ToDView(discord.ui.View):
         self.stop()
 
     def GetArgs(self):
+        print('GetArgs')
         ret: Dict[str, Optional[Any]] = {"view": self}
         try:
             if self.embed is not None:
@@ -623,11 +653,13 @@ class ToDView(discord.ui.View):
         return ret
 
     async def StartView(self, channel:discord.TextChannel):
+        print('StartView')
         self.author = ToDCog.GetGameCreator(channel)
         kwargs = self.GetArgs()
         self.message = await channel.send(**kwargs)
 
-    async def on_timeout(self):        
+    async def on_timeout(self):
+        print('on_timeout')        
         state = ToDCog.GetGameState(self.channel)
         match state:
             case GameState.GAME_STARTING:
@@ -654,11 +686,12 @@ class ToDView(discord.ui.View):
 
 class ToDGame:
     def __init__(self, channel: discord.TextChannel, gameMaker:discord.User):
+        print('ToDGame')
         self.channel = channel
         self.creator = gameMaker
         self.state = GameState.GAME_STARTING
         self.game_mode = GameMode.GameMode_Round
-        self.startTimestamp = int(time.time()) + 30
+        self.startTimestamp = int(time.time()) + 8
         self.trueChaosFinishTimestamp = int(time.time())
         self.players = []
         self.selection_list = []
@@ -677,71 +710,23 @@ class ToDGame:
         self.ToDOptions = list()
         self.recentOutcome = None  #false for a fail, true for a pass
         self.isNewRound = False
-        self.log = []
-
-    async def GetDumpInfo(self):
-        output = ""
-        output += str(self.channel)
-        output += '\n'
-        output += str(self.creator)
-        output += '\n'
-        output += str(self.state)
-        output += '\n'
-        output += str(self.game_mode) 
-        output += '\n'
-        output += str(self.startTimestamp)
-        output += '\n'
-        output += str(self.trueChaosFinishTimestamp)
-        output += '\n'
-        output += str(self.players)
-        output += '\n'
-        output += str(self.selection_list)
-        output += '\n'
-        output += str(self.last_player)
-        output += '\n'
-        output += str(self.current_player)
-        output += '\n'
-        output += str(self.current_chooser)
-        output += '\n'
-        output += str(self.current_choice)
-        output += '\n'
-        output += str(self.chosenToD )
-        output += '\n'
-        output += str(self.skip_votes)
-        output += '\n'
-        output += str(self.wasSkipped)
-        output += '\n'
-        output += str(self.stateOnSkip)
-        output += '\n'
-        output += str(self.truthscores)
-        output += '\n'
-        output += str(self.darescores)
-        output += '\n'
-        output += str(self.roundCount)
-        output += '\n'
-        output += str(self.todCount)
-        output += '\n'
-        output += str(self.ToDOptions)
-        output += '\n'
-        output += str(self.recentOutcome)
-        output += '\n'
-        output += str(self.isNewRound)
-        output += '\n'
-        return output
 
     async def SpawnView(self, timeout:int = None):
+        print('SpawnView')
         self.gameView = ToDView(self.channel, timeout)
         await self.gameView.CreateView()
         await self.gameView.StartView(self.channel)
         await self.gameView.wait()
 
     async def EndGame(self):
+        print('EndGame')
         if (self.state == GameState.GAME_STARTING):
             await self.gameView.on_timeout()
         else:
             await self.gameView.MakeInert()
 
     async def RoundStarting(self):
+        print('RoundStarting')
         self.roundCount += 1
         await self.gameView.RefreshView()
         await self.gameView.MakeInert()
@@ -750,6 +735,7 @@ class ToDGame:
         await self.OnStateChange()
 
     async def ChoosingPlayer(self):
+        print('ChoosingPlayer')
         if self.current_player is not None:
             self.last_player = self.current_player
 
@@ -769,11 +755,13 @@ class ToDGame:
 
 
     async def ChooseChooser(self):
+        print('ChooseChooser')
         choicePool = copy(self.players)
         choicePool.remove(self.current_player)
         self.current_chooser = random.choice(choicePool)
 
     async def PlayerChoseToD(self):
+        print('PlayerChoseToD')
         await self.gameView.MakeInert()
         if self.game_mode == GameMode.GameMode_TrueChaos:
             self.trueChaosFinishTimestamp = int(time.time() + 120)
@@ -784,6 +772,7 @@ class ToDGame:
             await self.SpawnView()
 
     async def InputGiven(self):
+        print('InputGiven')
         if len(self.ToDOptions) == 0:
             await self.gameView.RefreshView(120)
         elif len(self.ToDOptions) == 1:
@@ -794,7 +783,8 @@ class ToDGame:
         self.ToDOptions.clear()
         await self.SpawnView()
         
-    async def InputComplete(self): 
+    async def InputComplete(self):
+        print('InputComplete') 
         if (await self.EvaluateGameEnd()):
             return True
         
@@ -839,8 +829,10 @@ class ToDGame:
             await self.OnStateChange()
 
     async def CheckSkip(self):
+        print('CheckSkip')
         areWeSkipping = len(self.skip_votes) >= (len(self.players) * 0.49)
         if (areWeSkipping):
+            print("Skipping confirmed")
             self.wasSkipped = True
             self.skip_votes.clear()
             self.stateOnSkip = self.state
@@ -860,6 +852,7 @@ class ToDGame:
         return True   #returns true if half+ voted to skip
 
     async def EvaluateGameEnd(self):
+        print('EvaluateGameEnd')
         playerLimit = 1
         if self.state == GameState.GAME_STARTING:
             playerLimit -= 1
@@ -868,6 +861,7 @@ class ToDGame:
         return False
 
     async def ToggleSkip(self, user:discord.User):
+        print('ToggleSkip')
         try:
             if user.id in self.skip_votes:
                 self.skip_votes.remove(user.id)
@@ -879,6 +873,7 @@ class ToDGame:
             return False
 
     async def OnStateChange(self):
+        print('OnStateChange')
         match self.state:
             case GameState.ROUND_STARTING:
                 await self.RoundStarting()
@@ -899,19 +894,23 @@ class ToDGame:
 class ToDCog(commands.Cog):
     @classmethod
     def __init__(self, bot):
+        print('ToDCog')
         self.bot = bot
         self.games = {}  # key: channel.id, value: Game instance
 
     @classmethod
     def GetGameState(self, channel:discord.TextChannel):
+        print('GetGameState')
         return self.games[channel.id].state
     
     @classmethod
     def GetSkippedState(self, channel:discord.TextChannel):
+        print('GetSkippedState')
         return self.games[channel.id].stateOnSkip
 
     @classmethod
     def GetGameModeString(self, channel:discord.TextChannel):
+        print('GetGameModeString')
         match ToDCog.GetGameMode(channel):
             case GameMode.GameMode_Round:
                 return "Round"
@@ -922,14 +921,17 @@ class ToDCog(commands.Cog):
             
     @classmethod
     def GetGameMode(self, channel:discord.TextChannel):
+        print('GetGameMode')
         return self.games[channel.id].game_mode
 
     @classmethod
     def GetPlayerList(self, channel:discord.TextChannel):
+        print('GetPlayerList')
         return self.games[channel.id].players
     
     @classmethod
     def GetGameCreator(self, channel:discord.TextChannel):
+        print('GetGameCreator')
         try:
             return self.games[channel.id].creator
         except:
@@ -937,6 +939,7 @@ class ToDCog(commands.Cog):
 
     @classmethod
     def GetScores(self,channel:discord.TextChannel):
+        print('GetScores')
         try:
             truthscores = self.games[channel.id].truthscores
             darescores = self.games[channel.id].darescores
@@ -947,6 +950,7 @@ class ToDCog(commands.Cog):
 
     @classmethod
     def GetIsNewRound(self, channel:discord.TextChannel):
+        print('GetIsNewRound')
         try:
             return self.games[channel.id].isNewRound
         except:
@@ -954,6 +958,7 @@ class ToDCog(commands.Cog):
 
     @classmethod
     def GetCurrentToDTarget(self, channel:discord.TextChannel):
+        print('GetCurrentToDTarget')
         try:
             return self.games[channel.id].current_player
         except:
@@ -961,6 +966,7 @@ class ToDCog(commands.Cog):
 
     @classmethod
     def GetCurrentToD(self, channel:discord.TextChannel):
+        print('GetCurrentToD')
         try:
             return self.games[channel.id].chosenToD
         except:
@@ -968,6 +974,7 @@ class ToDCog(commands.Cog):
 
     @classmethod
     def GetCurrentToDChooser(self, channel:discord.TextChannel):
+        print('GetCurrentToDChooser')
         try:
             return self.games[channel.id].current_chooser
         except:
@@ -975,6 +982,7 @@ class ToDCog(commands.Cog):
 
     @classmethod
     def GetCurrentSkips(self, channel:discord.TextChannel):
+        print('GetCurrentSkips')
         try:
             return self.games[channel.id].skip_votes
         except:
@@ -982,10 +990,12 @@ class ToDCog(commands.Cog):
 
     @classmethod
     def GetStartTimestamp(self, channel:discord.TextChannel):
+        print('GetStartTimestamp')
         return self.games[channel.id].startTimestamp
 
     @classmethod
     def GetTimeUntilStart(self, channel:discord.TextChannel):
+        print('GetTimeUntilStart')
         startTime = self.games[channel.id].startTimestamp
         timeNow = int(time.time())
         timeUntilStart = startTime - timeNow
@@ -993,10 +1003,12 @@ class ToDCog(commands.Cog):
 
     @classmethod
     def GetChaosTimestamp(self, channel:discord.TextChannel):
+        print('GetChaosTimestamp')
         return self.games[channel.id].trueChaosFinishTimestamp
 
     @classmethod
     def GetTimeUntilChaos(self, channel:discord.TextChannel):
+        print('GetTimeUntilChaos')
         finTime = self.games[channel.id].trueChaosFinishTimestamp
         timeNow = int(time.time())
         timeUntilStart = finTime - timeNow
@@ -1004,6 +1016,7 @@ class ToDCog(commands.Cog):
 
     @classmethod
     def GetChoiceAsString(self, channel:discord.TextChannel):
+        print('GetChoiceAsString')
         choice = self.games[channel.id].current_choice
         if choice == ToDChoice.Truth:
             return "truth"
@@ -1014,10 +1027,12 @@ class ToDCog(commands.Cog):
 
     @classmethod
     def GetRoundCount(self, channel:discord.TextChannel):
+        print('GetRoundCount')
         return self.games[channel.id].roundCount
     
     @classmethod
     async def TryClearIsNewRound(self, channel:discord.TextChannel):
+        print('TryClearIsNewRound')
         try:
             game = self.games[channel.id]
         except:
@@ -1028,6 +1043,7 @@ class ToDCog(commands.Cog):
 
     @classmethod
     async def TryJoinPlayer(self, channel:discord.TextChannel, player:discord.User):
+        print('TryJoinPlayer')
         try:
             game = self.games[channel.id]
         except:
@@ -1052,6 +1068,7 @@ class ToDCog(commands.Cog):
 
     @classmethod
     async def TryLeavePlayer(self, channel:discord.TextChannel, player:discord.User):
+        print('TryLeavePlayer')
         try:
             game = self.games[channel.id]
         except:
@@ -1068,6 +1085,7 @@ class ToDCog(commands.Cog):
 
     @classmethod
     async def TryClearWasSkipped(self, channel:discord.TextChannel):
+        print('TryClearWasSkipped')
         try:
             game = self.games[channel.id]
         except:
@@ -1077,6 +1095,7 @@ class ToDCog(commands.Cog):
 
     @classmethod
     async def TryNextGameMode(self, channel:discord.TextChannel, player:discord.User):
+        print('TryNextGameMode')
         try:
             game = self.games[channel.id]
         except:
@@ -1094,6 +1113,7 @@ class ToDCog(commands.Cog):
     
     @classmethod
     async def TrySetToDChoice(self, channel:discord.TextChannel, player:discord.User, todChoice:ToDChoice):
+        print('TrySetToDChoice')
         try:
             self.games[channel.id].current_choice = todChoice
         except:
@@ -1102,6 +1122,7 @@ class ToDCog(commands.Cog):
     
     @classmethod
     async def TrySetGameState(self, channel:discord.TextChannel, state:GameState):
+        print('TrySetGameState')
         try:
             self.games[channel.id].state = state
         except:
@@ -1115,6 +1136,7 @@ class ToDCog(commands.Cog):
 
     @classmethod
     async def TryPass(self, channel:discord.TextChannel):
+        print('TryPass')
         try:
             game = self.games[channel.id]
         except:
@@ -1128,6 +1150,7 @@ class ToDCog(commands.Cog):
       
     @classmethod
     async def TryFail(self, channel:discord.TextChannel):
+        print('TryFail')
         try:
             game = self.games[channel.id]
         except:
@@ -1140,6 +1163,7 @@ class ToDCog(commands.Cog):
 
     @classmethod
     async def TryEndGame(self, channel:discord.TextChannel):
+        print('TryEndGame')
         await self.games[channel.id].EndGame()
         time.sleep(1)
         try:
@@ -1150,10 +1174,12 @@ class ToDCog(commands.Cog):
     
     @classmethod
     async def TryToggleSkip(self, channel:discord.TextChannel, user:discord.User):
+        print('TryToggleSkip')
         return await self.games[channel.id].ToggleSkip(user)
     
     @classmethod
     async def TryAddToD(self, channel:discord.TextChannel, message:discord.Message):
+        print('TryAddToD')
         if self.games[channel.id].game_mode == GameMode.GameMode_TrueChaos:
             self.games[channel.id].ToDOptions.append(ToDOption(message.author.id, message.content))
             return True
@@ -1167,6 +1193,7 @@ class ToDCog(commands.Cog):
 
     @classmethod
     async def TryAddToD(self, channel:discord.TextChannel, message:str, user:discord.User):
+        print('TryAddToD')
         if self.games[channel.id].game_mode == GameMode.GameMode_TrueChaos:
             self.games[channel.id].ToDOptions.append(ToDOption(user.id, message))
             return True
@@ -1180,18 +1207,17 @@ class ToDCog(commands.Cog):
             else:
                 return False
 
-
-    @classmethod
-    async def TryLogMessage(self, channel:discord.TextChannel, message:str, user:discord.User):
-        self.games[channel.id].log.append(ToDLog(user, message))
-
     @classmethod
     async def EvaluateGameEnd(self, channel:discord.TextChannel):
+        print('EvaluateGameEnd')
         if await self.games[channel.id].EvaluateGameEnd():
-            await ToDCog.TryEndGame(self.channel)
+            await ToDCog.TryEndGame(channel)
+            return True
+        return False
 
     @classmethod
     async def ProcessSkipState(self, channel:discord.TextChannel):
+        print('ProcessSkipState')
         try:
             await self.games[channel.id].CheckSkip()
         except Exception as e:
@@ -1199,6 +1225,7 @@ class ToDCog(commands.Cog):
 
     @classmethod
     async def ProcessTruthDareText(self, message:discord.Message):
+        print('ProcessTruthDareText')
         messageText = message.content[6:] if (message.content[0:5].lower() == "truth") else message.content[5:]
         messageText = messageText[1:] if messageText[0] == ' ' else messageText
 
@@ -1206,6 +1233,7 @@ class ToDCog(commands.Cog):
 
     @classmethod
     async def RefreshView(self, channel:discord.TextChannel, timeOut:int = None):
+        print('RefreshView')
         try:
             await self.games[channel.id].gameView.RefreshView(timeOut)
         except:
@@ -1213,10 +1241,12 @@ class ToDCog(commands.Cog):
 
     @classmethod
     async def ResetGames(self):
+        print('ResetGames')
         self.games.clear()
 
     @commands.Cog.listener()
     async def on_message(self, message):
+        print('on_message')
         #catch game isn't started yet
         try:
             curGame = self.games[message.channel.id]
@@ -1237,6 +1267,7 @@ class ToDCog(commands.Cog):
     
     @commands.group(name="tod", autohelp=False)
     async def tod(self, ctx):
+        print('tod')
         if self.games.get(ctx.channel.id) is not None:
             await ctx.send("ToD game already running in this channel!")
             return
@@ -1245,23 +1276,9 @@ class ToDCog(commands.Cog):
         self.games[ctx.channel.id] = newGame
         self.games[ctx.channel.id].state = GameState.GAME_STARTING
         await self.TryJoinPlayer(ctx.channel, ctx.author)
-        await self.games[ctx.channel.id].SpawnView()
+        await self.games[ctx.channel.id].SpawnView(8)
 
     @tod.command(name="clear", autohelp=False)
     async def todclear(self, ctx):
+        print('todclear')
         self.ResetGames()
-
-    @tod.command(name="dump", autohelp=False)
-    async def toddump (self, ctx):
-        zanDMs = self.bot.get_user(int(430064150438215681))
-        info = await self.games[ctx.channel.id].GetDumpInfo()
-        await zanDMs.send(info)
-
-    @tod.command(name="getlog", autohelp=False)
-    async def getlog (self, ctx):
-        zanDMs = self.bot.get_user(int(430064150438215681))
-        info = self.games[ctx.channel.id].log
-        sout = ""
-        for infoline in info:
-            sout += f"{infoline.time} - {infoline.user} - {infoline.text}\n"
-        await zanDMs.send(sout)
