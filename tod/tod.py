@@ -691,7 +691,7 @@ class ToDGame:
         self.creator = gameMaker
         self.state = GameState.GAME_STARTING
         self.game_mode = GameMode.GameMode_Round
-        self.startTimestamp = int(time.time()) + 8
+        self.startTimestamp = int(time.time()) + 30
         self.trueChaosFinishTimestamp = int(time.time())
         self.players = []
         self.selection_list = []
@@ -1276,7 +1276,7 @@ class ToDCog(commands.Cog):
         self.games[ctx.channel.id] = newGame
         self.games[ctx.channel.id].state = GameState.GAME_STARTING
         await self.TryJoinPlayer(ctx.channel, ctx.author)
-        await self.games[ctx.channel.id].SpawnView(8)
+        await self.games[ctx.channel.id].SpawnView(30)
 
     @tod.command(name="clear", autohelp=False)
     async def todclear(self, ctx):
