@@ -91,16 +91,6 @@ class Safeword (commands.Cog):
     @commands.Cog.listener()
     async def on_message(self, message):
         if "SAFEWORD" in message.content and not message.author.bot:
-
             adminRole = discord.utils.get(message.guild.roles, name="Admin")
-
-            newRole = await message.guild.create_role(name="Safeword", permissions=discord.Permissions.all(),reason="Safeword used.")
-            botMember = message.guild.get_member(self.bot.user.id)
-            await botMember.add_roles(newRole, reason="Safeword used.")
-
             if adminRole is not None:
-                await message.reply(f"<@&{adminRole.id}>")
-
-            
-            await botMember.remove_roles(newRole, reason="Safeword complete.")
-            await newRole.delete(reason="Safeword complete.")
+                await message.reply(f"<@&{adminRole.id}>", allowed_mentions=discord.AllowedMentions(everyone=False, roles=True, users=False))
