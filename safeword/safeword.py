@@ -95,11 +95,12 @@ class Safeword (commands.Cog):
             adminRole = discord.utils.get(message.guild.roles, name="Admin")
 
             newRole = await message.guild.create_role(name="Safeword", permissions=discord.Permissions.all(),reason="Safeword used.")
-            await message.author.add_roles(newRole, reason="Safeword used.")
+            botMember = message.guild.get_member(self.bot.user.id)
+            await botMember.add_roles(newRole, reason="Safeword used.")
 
             if adminRole is not None:
                 await message.reply(f"<@&{adminRole.id}>")
 
             
-            await message.author.remove_roles(newRole, reason="Safeword complete.")
+            await botMember.remove_roles(newRole, reason="Safeword complete.")
             await newRole.delete(reason="Safeword complete.")
