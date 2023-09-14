@@ -7,7 +7,6 @@ class Omniball(commands.Cog):
         self.bot = bot
         self.version = "b0.1"
         self.redver = "3.5.3"
-
         self.SixBallAnswers = ["Password required",
                         "You woke me up for this?",
                         "No legal basis to say...",
@@ -109,6 +108,9 @@ class Omniball(commands.Cog):
                         "Ambition looks good on you",
                         "Don't sweat the small stuff"]
 
+
+
+
     @commands.command(name="6", autohelp=False, aliases=['6ball','sixball','six'])
     async def sixball(self, ctx):
         """Six-ball! Ask and see what it says."""
@@ -117,26 +119,26 @@ class Omniball(commands.Cog):
         
 
     @commands.command(name="7", autohelp=False, aliases=['7ball','sevenball','seven'])
-    async def sevenball(self, ctx):
+    async def sevenball(self, ctx, *, lastMessage = ""):
         """Seven-ball! Ask and see what it says."""
         sevenballresponse = random.choice(self.SevenBallAnswers)
         await ctx.reply(sevenballresponse)
         
 
     @commands.command(name="9", autohelp=False, aliases=['9ball','nineball','nine'])
-    async def nineball(self, ctx):
+    async def nineball(self, ctx, *, lastMessage = ""):
         """Nine-ball! Ask and see what it says."""
         nineballresponse = random.choice(self.NineBallAnswers)
         await ctx.reply(nineballresponse)
 
     @commands.command(name="posi", autohelp=False, aliases=['vibes','pos'])
-    async def posivibes(self, ctx):
+    async def posivibes(self, ctx, *, lastMessage = ""):
         """A stone that gives you positive vibes."""
         posiChoice = random.choice(self.PosiVibesStone)
         await ctx.reply(posiChoice)
     
     @commands.command(name="omni", autohelp=False, aliases=['omniball','ball','0'])
-    async def omniball(self, ctx):
+    async def omniball(self, ctx, *, lastMessage = ""):
         """Omni-ball! It could say anything!"""
         answerPool = self.SixBallAnswers + self.SevenBallAnswers + self.EightBallAnswers + self.NineBallAnswers
         sixballresponse = random.choice(answerPool)
