@@ -96,6 +96,13 @@ class ToDLeaveResponse(Enum):
     GameNotExist = 3
     Error = 4
 
+class ToDSkipResponse(Enum):
+    SuccessfulSkipAdded = 1
+    SuccessfulSkipRemoved = 2
+    NotPlaying = 3
+    FailedToggleSkip = 4
+    Error = 5
+
 class ToDOption:
     def __init__(self, user:discord.User, text:str):
         print('ToDOption')
@@ -220,10 +227,19 @@ class ToDButton(discord.ui.Button):
         print('SkipButtonPress')
         result = await ToDCog.TryToggleSkip(interaction.channel, interaction.user)
         await interaction.response.defer()  #don't update 
-        if not result:
-            await interaction.followup.send("You're not playing yet!",ephemeral=True)
-        else:
-            await ToDCog.ProcessSkipState(interaction.channel)
+        match result:
+            case ToDSkipResponse.SuccessfulSkipAdded:
+                await interaction.followup.send("Added your vote to skip!",ephemeral=True)
+                await ToDCog.ProcessSkipState(interaction.channel)
+            case ToDSkipResponse.SuccessfulSkipRemoved:
+                await interaction.followup.send("Removed your vote to skip!",ephemeral=True)
+            case ToDSkipResponse.FailedToggleSkip:
+                await interaction.followup.send("Something went wrong with your skip. Try again or @Zan.",ephemeral=True)
+            case ToDSkipResponse.NotPlaying:
+                await interaction.followup.send("You're not playing, so you can't vote!",ephemeral=True)
+            case ToDSkipResponse.Error:
+                await interaction.followup.send("Something went wrong with your skip. Try again or @Zan.",ephemeral=True)
+        
     
     async def GameModeButtonPress(self, interaction:discord.Interaction):
         print('GameModeButtonPress')
@@ -880,15 +896,18 @@ class ToDGame:
 
     async def ToggleSkip(self, user:discord.User):
         print('ToggleSkip')
+        if user not in self.players:
+            return ToDSkipResponse.NotPlaying
+        
         try:
             if user.id in self.skip_votes:
                 self.skip_votes.remove(user.id)
-                return True
+                return ToDSkipResponse.SuccessfulSkipRemoved
             else:
                 self.skip_votes.append(user.id)
-                return True
+                return ToDSkipResponse.SuccessfulSkipAdded
         except:
-            return False
+            return ToDSkipResponse.Error
 
     async def OnStateChange(self):
         print('OnStateChange')
@@ -1097,7 +1116,6 @@ class ToDCog(commands.Cog):
         try:
             game = self.games[channel.id]
         except:
-            await channel.send("Something went wrong with the game mode.")
             return ToDLeaveResponse.GameNotExist
 
         if player in game.players:
