@@ -1050,7 +1050,7 @@ class ToDCog(commands.Cog):
         if player in game.players:
             return False
         
-        if game.state == GameState.NOT_STARTED:
+        if game.state == GameState.NOT_STARTED or game.state == GameState.GAME_ENDING:
             return False
 
         try:
