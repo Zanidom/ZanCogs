@@ -1,0 +1,8 @@
+{
+  "author": [ "Zan (Zanidom)" ],
+    "short" : "Cog for role assignment to one person",
+    "description" : "Cog that lets a list of authorised users assign a given role for one user to own at a time.",
+    "name" : "wpc",
+    "tags" : ["roles"],
+    "install_msg" : "Thank you for installing the WPC cog!"
+}
