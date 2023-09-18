@@ -151,7 +151,6 @@ class ToDButton(discord.ui.Button):
                 if name is None:
                     name = interaction.user.global_name
                 await interaction.response.send_message(f"{name} joined.")
-                await self.view.RefreshView()
         else:
             await interaction.response.send_message("You're already playing!",ephemeral=True)
             if ToDCog.GetGameState(interaction.channel) == GameState.GAME_STARTING:
