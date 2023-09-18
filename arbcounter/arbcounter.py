@@ -1,4 +1,5 @@
 from redbot.core import checks, Config, commands
+import re
 
 class ArbCounter(commands.Cog):
     def __init__(self, bot):
@@ -25,6 +26,8 @@ class ArbCounter(commands.Cog):
             serverConfig = await self.config.guild(guild).Config()
 
             indivStrings = lastMessage.split(" ")
+            indivStrings = [s for s in indivStrings if s.strip()]
+
             if indivStrings[0].lower() == "set":
                 if len(indivStrings) < 3:
                     await ctx.send("Not enough arguments supplied.")
@@ -64,12 +67,16 @@ class ArbCounter(commands.Cog):
                 await ctx.send(f"`{tokenName}` is now {val}.")
 
             else:
-                try:
-                    val = int(serverConfig[lastMessage.lower()])
-                except:
-                    val = 0
-                await ctx.send(f"`{lastMessage.lower()}` is {val}.")
-                pass
+                output = await self.ParseNonCommand(ctx, lastMessage)
+                if output is None:
+                    try:
+                        val = int(serverConfig[lastMessage.lower()])
+                    except:
+                        val = 0
+                    await ctx.send(f"`{lastMessage.lower()}` is {val}.")
+                    pass
+                else:
+                    pass
             pass
         return True
     
@@ -82,17 +89,25 @@ class ArbCounter(commands.Cog):
         await self.config.guild(guild).Config.set(serverConfig) #save our changes
         await ctx.send(f"Set `{counterToken.lower()}` to {value}.")
 
-    @arbcounter.command(name="delete")
+    @arbcounter.command(name="delete", autohelp=False, aliases=['del','remove','d'])
     async def ac_delete(self, ctx, counterToken: str):
         """Delete a counter token"""
         
         guild = ctx.guild
         await self.check_server_settings(guild)
         serverConfig = await self.config.guild(guild).Config()
-        del serverConfig[counterToken]
-        await self.config.clear_raw(counterToken)
-        await self.config.guild(guild).Config.set(serverConfig) #save our changes
-        await ctx.send(f"Deleted `{counterToken}`.")
+        success = True
+        try:
+            del serverConfig[counterToken]
+        except:
+            success = False
+
+        if success:
+            await self.config.clear_raw(counterToken)
+            await self.config.guild(guild).Config.set(serverConfig) #save our changes
+            await ctx.send(f"Deleted `{counterToken}`.")
+        else:
+            await ctx.send(f"Couldn't find {counterToken}.")
 
     @arbcounter.command(name="++")
     async def ac_increment(self, ctx, counterToken: str):
@@ -109,4 +124,30 @@ class ArbCounter(commands.Cog):
         if not cur["Registered"]:
             cur["Registered"] = True
             await self.config.guild(guild).Config.set(cur)
-          
+    
+
+    async def ParseNonCommand(self, ctx, instring:str):
+        instring = re.sub(r'\s+', '', instring)
+        match = re.search(r'([-+]\d+)$', instring)
+
+        if match:
+            operation = match.group(1)
+            token = instring[:match.start()].strip()
+            number = int(operation)
+            guild = ctx.guild
+
+            serverConfig = await self.config.guild(guild).Config()
+
+            try:
+                print("Made it!")
+                current_value = int(serverConfig[token])
+                serverConfig[token] = current_value + number
+            except:
+                serverConfig[token] = number
+
+            await self.config.guild(guild).Config.set(serverConfig) #save our changes
+
+            await ctx.send(f"`{token.lower()}` is now {serverConfig[token]}.")
+            return serverConfig[token]
+        else:
+            return None
