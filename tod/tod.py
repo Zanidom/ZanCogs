@@ -1,7 +1,5 @@
 import time
-import array
 import random
-import trace
 import discord
 import redbot.core
 from enum import Enum
@@ -143,6 +141,7 @@ class ToDButton(discord.ui.Button):
     async def JoinButtonPress(self, interaction: discord.Interaction):
         print('JoinButtonPress')
         result = await ToDCog.TryJoinPlayer(interaction.channel, interaction.user)
+        print(result)
         if result:
             if ToDCog.GetGameState(interaction.channel) == GameState.GAME_STARTING:  #refresh the player list
                 await self.view.UpdateView(interaction, ToDCog.GetTimeUntilStart(interaction.channel))
@@ -1051,6 +1050,9 @@ class ToDCog(commands.Cog):
         if player in game.players:
             return False
         
+        if game.state == GameState.NOT_STARTED:
+            return False
+
         try:
             game.players.append(player)
             if game.game_mode == GameMode.GameMode_Chaos or game.game_mode == GameMode.GameMode_TrueChaos:
