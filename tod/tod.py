@@ -156,6 +156,8 @@ class ToDButton(discord.ui.Button):
 
         if ToDCog.GetGameState(interaction.channel) == GameState.GAME_STARTING:  #refresh the player list
             await self.view.UpdateView(interaction, ToDCog.GetTimeUntilStart(interaction.channel))
+        else:
+            await interaction.response.defer()
 
         print (result)
         match result:
@@ -180,6 +182,8 @@ class ToDButton(discord.ui.Button):
         
         if ToDCog.GetGameState(interaction.channel) == GameState.GAME_STARTING:  #refresh the player list
             await self.view.UpdateView(interaction, timeTilStart)
+        else:
+            await interaction.response.defer()
 
         print (result)
         match result:
