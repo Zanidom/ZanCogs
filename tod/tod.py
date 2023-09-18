@@ -84,6 +84,18 @@ class ToDChoice(Enum):
     Truth = 2
     Dare = 3
 
+class ToDJoinResponse(Enum):
+    SuccessfulJoin = 1
+    AlreadyPlaying = 2
+    GameNotExist = 3
+    Error = 4
+
+class ToDLeaveResponse(Enum):
+    SuccessfulLeave = 1
+    NotPlaying = 2
+    GameNotExist = 3
+    Error = 4
+
 class ToDOption:
     def __init__(self, user:discord.User, text:str):
         print('ToDOption')
@@ -141,19 +153,23 @@ class ToDButton(discord.ui.Button):
     async def JoinButtonPress(self, interaction: discord.Interaction):
         print('JoinButtonPress')
         result = await ToDCog.TryJoinPlayer(interaction.channel, interaction.user)
-        print(result)
-        if result:
-            if ToDCog.GetGameState(interaction.channel) == GameState.GAME_STARTING:  #refresh the player list
-                await self.view.UpdateView(interaction, ToDCog.GetTimeUntilStart(interaction.channel))
-            else:
+
+        if ToDCog.GetGameState(interaction.channel) == GameState.GAME_STARTING:  #refresh the player list
+            await self.view.UpdateView(interaction, ToDCog.GetTimeUntilStart(interaction.channel))
+
+        print (result)
+        match result:
+            case ToDJoinResponse.SuccessfulJoin:
                 name = interaction.user.nick
                 if name is None:
                     name = interaction.user.global_name
-                await interaction.response.send_message(f"{name} joined.")
-        else:
-            await interaction.response.send_message("You're already playing!",ephemeral=True)
-            if ToDCog.GetGameState(interaction.channel) == GameState.GAME_STARTING:
-                await self.view.RefreshView(ToDCog.GetTimeUntilStart(interaction.channel))
+                await interaction.followup.send(f"{name} joined.")
+            case ToDJoinResponse.AlreadyPlaying:
+                await interaction.followup.send("You're already playing!",ephemeral=True)
+            case ToDJoinResponse.GameNotExist:
+                await interaction.followup.send("There's no current game going on!",ephemeral=True)
+            case ToDJoinResponse.Error:
+                await interaction.followup.send("Something went wrong. Please @Zan and let him know what you did.",ephemeral=True)
         return
 
     async def LeaveButtonPress(self, interaction: discord.Interaction):
@@ -161,12 +177,14 @@ class ToDButton(discord.ui.Button):
         #todo finish logic for if they leave and they're the current chooser or tod-er
         result = await ToDCog.TryLeavePlayer(interaction.channel, interaction.user)
         timeTilStart = ToDCog.GetTimeUntilStart(interaction.channel) 
-        if result:
-            #successful leave. Make sure they were irrelevant
-            if ToDCog.GetGameState(interaction.channel) == GameState.GAME_STARTING:  #refresh the player list if we're just starting the game
-                await self.view.UpdateView(interaction, timeTilStart)
-                return
-            else:
+        
+        if ToDCog.GetGameState(interaction.channel) == GameState.GAME_STARTING:  #refresh the player list
+            await self.view.UpdateView(interaction, timeTilStart)
+
+        print (result)
+        match result:
+            case ToDLeaveResponse.SuccessfulLeave:
+                geResult = await ToDCog.EvaluateGameEnd(interaction.channel)
                 curPlayer = ToDCog.GetCurrentToDTarget(interaction.channel)
                 curChooser = ToDCog.GetCurrentToDChooser(interaction.channel)
                 
@@ -174,25 +192,25 @@ class ToDButton(discord.ui.Button):
                 if curName is None:
                     curName = interaction.user.global_name
                     
-                if await ToDCog.EvaluateGameEnd(interaction.channel):
+                if geResult == True:
                     print("Outcome 1")
-                    
-                    await interaction.response.send_message(f"{curName} left. Not enough players left, game ending.")
+                    #check if we need to end the game now.
+                    await interaction.followup.send(f"{curName} left. Not enough players left, game ending.")
                     await ToDCog.TryEndGame(interaction.channel)
                     return
                 else:
                     print("Outcome 2")
                     if interaction.user == curPlayer or interaction.user == curChooser:
-                        await interaction.response.send_message(f"{curName} left while they were in play - resetting to choosing player")
+                        await interaction.followup.send(f"{curName} left while they were in play - resetting to choosing player")
                         await ToDCog.TrySetGameState(interaction.channel, GameState.INPUT_COMPLETE)
                     else:
-                        await interaction.response.send_message(f"{curName} left.")
-
-        else:
-            await interaction.response.send_message("You're not playing yet!",ephemeral=True)
-            if ToDCog.GetGameState(interaction.channel) == GameState.GAME_STARTING:  #refresh the player list
-                await self.view.UpdateView(interaction, timeTilStart)
-
+                        await interaction.followup.send(f"{curName} left.")
+            case ToDLeaveResponse.NotPlaying:
+                await interaction.followup.send("You're not playing yet!",ephemeral=True)
+            case ToDLeaveResponse.GameNotExist:
+                await interaction.followup.send("There's no current game going on!",ephemeral=True)
+            case ToDLeaveResponse.Error:
+                await interaction.followup.send("This should literally never send, please @Zan and let him know what you did.",ephemeral=True)
 
     async def SkipButtonPress(self, interaction: discord.Interaction):
         print('SkipButtonPress')
@@ -1043,28 +1061,31 @@ class ToDCog(commands.Cog):
         try:
             game = self.games[channel.id]
         except:
-            return False
+            return ToDJoinResponse.GameNotExist
         
-        if player.id in game.players:
-            return False
+        if player in game.players:
+            return ToDJoinResponse.AlreadyPlaying
         
         if game.state == GameState.NOT_STARTED or game.state == GameState.GAME_ENDING:
-            return False
+            return ToDJoinResponse.GameNotExist
 
         try:
-            game.players.append(player.id)
+            game.players.append(player)
             if game.game_mode == GameMode.GameMode_Chaos or game.game_mode == GameMode.GameMode_TrueChaos:
-                game.selection_list.append(player.id)
+                game.selection_list.append(player)
                 print (f"{player} joined.")
         except:
             #cleanup, make sure they were never added
             try:
-                game.players.remove(player.id)
-                game.selection_list.remove(player.id)
+                game.players.remove(player)
+                try:
+                    game.selection_list.remove(player)
+                except:
+                    pass
             except:
-                return False
-            return False    #something went wrong, do not join the player
-        return True
+                return ToDJoinResponse.Error
+            return ToDJoinResponse.Error    #something went wrong, do not join the player
+        return ToDJoinResponse.SuccessfulJoin
 
     @classmethod
     async def TryLeavePlayer(self, channel:discord.TextChannel, player:discord.User):
@@ -1073,15 +1094,20 @@ class ToDCog(commands.Cog):
             game = self.games[channel.id]
         except:
             await channel.send("Something went wrong with the game mode.")
-            return False
+            return ToDLeaveResponse.GameNotExist
 
         if player in game.players:
             try:
                 game.players.remove(player)
-                game.selection_list.remove(player)
+                try:    
+                    game.selection_list.remove(player)
+                except:
+                    pass
             except:
-                return False
-        return True
+                return ToDLeaveResponse.NotPlaying
+        else:
+            return ToDLeaveResponse.NotPlaying
+        return ToDLeaveResponse.SuccessfulLeave
 
     @classmethod
     async def TryClearWasSkipped(self, channel:discord.TextChannel):
@@ -1266,6 +1292,9 @@ class ToDCog(commands.Cog):
     @commands.group(name="tod", autohelp=False)
     async def tod(self, ctx):
         print('tod')
+
+        if ctx.invoked_subcommand is not None:
+            return
         if self.games.get(ctx.channel.id) is not None:
             await ctx.send("ToD game already running in this channel!")
             return
@@ -1279,4 +1308,5 @@ class ToDCog(commands.Cog):
     @tod.command(name="clear", autohelp=False)
     async def todclear(self, ctx):
         print('todclear')
-        self.ResetGames()
+        await self.ResetGames()
+        await ctx.send("Reset ToD games!")
