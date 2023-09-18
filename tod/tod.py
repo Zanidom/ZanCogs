@@ -176,9 +176,9 @@ class ToDButton(discord.ui.Button):
                     
                 if await ToDCog.EvaluateGameEnd(interaction.channel):
                     print("Outcome 1")
-                    #check if we need to end the game now.
+                    
                     await interaction.response.send_message(f"{curName} left. Not enough players left, game ending.")
-                    await self.view.RefreshView()
+                    await ToDCog.TryEndGame(interaction.channel)
                     return
                 else:
                     print("Outcome 2")
@@ -187,8 +187,6 @@ class ToDButton(discord.ui.Button):
                         await ToDCog.TrySetGameState(interaction.channel, GameState.INPUT_COMPLETE)
                     else:
                         await interaction.response.send_message(f"{curName} left.")
-
-
 
         else:
             await interaction.response.send_message("You're not playing yet!",ephemeral=True)
@@ -1047,22 +1045,22 @@ class ToDCog(commands.Cog):
         except:
             return False
         
-        if player in game.players:
+        if player.id in game.players:
             return False
         
         if game.state == GameState.NOT_STARTED or game.state == GameState.GAME_ENDING:
             return False
 
         try:
-            game.players.append(player)
+            game.players.append(player.id)
             if game.game_mode == GameMode.GameMode_Chaos or game.game_mode == GameMode.GameMode_TrueChaos:
-                game.selection_list.append(player)
+                game.selection_list.append(player.id)
                 print (f"{player} joined.")
         except:
             #cleanup, make sure they were never added
             try:
-                game.players.remove(player)
-                game.selection_list.remove(player)
+                game.players.remove(player.id)
+                game.selection_list.remove(player.id)
             except:
                 return False
             return False    #something went wrong, do not join the player
@@ -1212,10 +1210,7 @@ class ToDCog(commands.Cog):
     @classmethod
     async def EvaluateGameEnd(self, channel:discord.TextChannel):
         print('EvaluateGameEnd')
-        if await self.games[channel.id].EvaluateGameEnd():
-            await ToDCog.TryEndGame(channel)
-            return True
-        return False
+        return await self.games[channel.id].EvaluateGameEnd()
 
     @classmethod
     async def ProcessSkipState(self, channel:discord.TextChannel):
@@ -1248,21 +1243,22 @@ class ToDCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        print('on_message')
-        #catch game isn't started yet
+        if message.author.bot:
+            return
+        ctx = await self.bot.get_context(message)
+        if ctx.invoked_subcommand is not None:
+            return
+        
         try:
             curGame = self.games[message.channel.id]
         except:
             return
-        
         if curGame.state != GameState.PLAYER_HAS_CHOSEN_AWAITING_INPUT:
             if (message.content.lower() == ";tod reset"):
                 await self.ResetGames()
             return False
-
         if len(message.content) < 5:
             return False
-                
         if (message.content[0:6].lower() == "truth:" and curGame.current_choice == ToDChoice.Truth) or (message.content[0:5].lower() == "dare:" and curGame.current_choice == ToDChoice.Dare):
             await self.ProcessTruthDareText(message)
             return True
