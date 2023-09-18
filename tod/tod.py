@@ -1046,15 +1046,16 @@ class ToDCog(commands.Cog):
         try:
             game = self.games[channel.id]
         except:
-            await channel.send("Something went wrong with the game mode.")
             return False
         
         if player in game.players:
             return False
+        
         try:
             game.players.append(player)
             if game.game_mode == GameMode.GameMode_Chaos or game.game_mode == GameMode.GameMode_TrueChaos:
                 game.selection_list.append(player)
+                print (f"{player} joined.")
         except:
             #cleanup, make sure they were never added
             try:
