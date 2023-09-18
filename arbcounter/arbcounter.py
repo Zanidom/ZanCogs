@@ -139,7 +139,6 @@ class ArbCounter(commands.Cog):
             serverConfig = await self.config.guild(guild).Config()
 
             try:
-                print("Made it!")
                 current_value = int(serverConfig[token])
                 serverConfig[token] = current_value + number
             except:
