@@ -1265,7 +1265,7 @@ class ToDCog(commands.Cog):
         print('ProcessSkipState')
         try:
             await self.games[channel.id].CheckSkip()
-        except Exception as e:
+        except Exception:
             return False
 
     @classmethod

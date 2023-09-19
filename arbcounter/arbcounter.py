@@ -1,4 +1,5 @@
 from redbot.core import checks, Config, commands
+import discord 
 import re
 
 class ArbCounter(commands.Cog):
@@ -42,6 +43,13 @@ class ArbCounter(commands.Cog):
                 await self.ac_delete(ctx, indivStrings[1])
                 return
 
+            if indivStrings[0] == "search":
+                if len(indivStrings) < 2:
+                    await ctx.send("Not enough arguments supplied.")
+                    return
+                await self.ac_search(ctx, indivStrings[1])
+                return
+            
             mesSuffix = lastMessage[-2:]
 
             if mesSuffix == "++":
@@ -119,12 +127,38 @@ class ArbCounter(commands.Cog):
         """Decrement a counter by 1 - ac tokenname--"""
         pass
 
+    @arbcounter.command(name="search")
+    async def ac_searchcom(self, ctx, counterToken: str):
+        """Search all tokens for a given string - ac search <search>"""
+        pass   
+
     async def check_server_settings(self, guild):
         cur = await self.config.guild(guild).Config()
         if not cur["Registered"]:
             cur["Registered"] = True
             await self.config.guild(guild).Config.set(cur)
     
+    async def ac_search(self, ctx, search_term):
+        """Searches for keys in the dictionary containing the search term."""
+        search_term = search_term.strip()
+
+        if not search_term:
+            await ctx.send("Please provide a search term.")
+            return
+
+        guild = ctx.guild
+        serverConfig = await self.config.guild(guild).Config()
+
+        results = {k: v for k, v in serverConfig.items() if search_term.lower() in k.lower()}
+
+        if not results:
+            await ctx.send(f"No results found for '{search_term}'.")
+            return
+        
+        output = "\n".join([f"{k}: {v}" for k, v in results.items()])
+
+        embedOut = discord.Embed(title=search_term, description=output)
+        await ctx.send(embed = embedOut)
 
     async def ParseNonCommand(self, ctx, instring:str):
         instring = re.sub(r'\s+', '', instring)
