@@ -30,7 +30,6 @@ class WPC(commands.Cog):
         await ctx.send(f"Target role set to {role.name}.")
 
     @wpc.command(name="winner")
-    @checks.admin_or_permissions(manage_roles=True)
     async def wpc_winner(self, ctx, *, member: discord.Member):
         """Assign the target role to the specified member and remove from others."""
         authorized_users = await self.config.guild(ctx.guild).authorized_users()
