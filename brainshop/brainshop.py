@@ -58,7 +58,7 @@ class BrainShop(commands.Cog):
             "blocklist": [],
         }
         default_member = {
-            "option": None
+            "option": 1
         }
         self.config.register_member(**default_member)
         self.config.register_global(**default_global)
