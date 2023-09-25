@@ -58,7 +58,7 @@ class BrainShop(commands.Cog):
             "blocklist": [],
         }
         default_member = {
-            "option": 1
+            "option": 2
         }
         self.config.register_member(**default_member)
         self.config.register_global(**default_global)
@@ -84,8 +84,11 @@ class BrainShop(commands.Cog):
 
     @commands.Cog.listener("on_message_without_command")
     async def _message_listener(self, message: discord.Message):
+        try:
+            user_option = UserOption(await self.config.member(message.author).option())
+        except:
+            user_option = UserOption.OPTREPLYONLY
 
-        user_option = UserOption(await self.config.member(message.author).option())
         if message.reference:
             # Fetch the replied message to get its author's ID
             isResponse = True

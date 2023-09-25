@@ -227,8 +227,6 @@ class Markov(commands.Cog):
 
     async def generate_word_gram(self, model: dict, state: str):
         """ Generate text for word-mode vectorization """
-        # Remove word boundaries from ngram; whitespace is added back later
-        state = state.replace(" ", "")
         # Choose the next word taking into account recorded vector weights
         gram = await self.choose_gram(model, state)
         # Don't worry about it ;)
@@ -244,7 +242,15 @@ class Markov(commands.Cog):
 
     async def choose_gram(self, model: dict, state: str):
         """ Here lies the secret sauce """
-        gram, = random.choices(population=list(model[state].keys()),
+        print(state)
+        print (model)
+        try:
+            gram, = random.choices(population=list(model[state].keys()),
+                               weights=list(model[state].values()),
+                               k=1)  # Caution: basically magic
+        except:
+            state = state.replace(" ", "")
+            gram, = random.choices(population=list(model[state].keys()),
                                weights=list(model[state].values()),
                                k=1)  # Caution: basically magic
         return gram
