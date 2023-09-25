@@ -163,25 +163,49 @@ class Markov(commands.Cog):
     @checks.admin_or_permissions(manage_guild=True)
     @commands.guild_only()
     @markov.command()
-    async def channelenable(self, ctx: commands.Context, channel: str = None):
-        """ Enable modeling of messages in a channel for enabled users """
-        await self.channels_update(channel or ctx.channel.id, ctx.guild, True)
+    async def channelmode(self, ctx: commands.Context, mode: str, channel: discord.TextChannel = None):
+        """ 
+        Toggle modeling of messages in a channel for enabled users.
+
+        Modes:
+        - enable: Enable modeling for the channel
+        - disable: Disable modeling for the channel
+        """
+        channel = channel or ctx.channel
+        channels = await self.conf.guild(ctx.guild).channels()
+
+        if mode.lower() == "enable":
+            if channel.id not in channels:
+                channels.append(channel.id)
+                await ctx.send(f"Modeling enabled for {channel.mention}.")
+            else:
+                await ctx.send(f"Modeling already enabled for {channel.mention}.")
+        elif mode.lower() == "disable":
+            if channel.id in channels:
+                channels.remove(channel.id)
+                await ctx.send(f"Modeling disabled for {channel.mention}.")
+            else:
+                await ctx.send(f"Modeling already disabled for {channel.mention}.")
+        else:
+            return await ctx.send("Invalid mode. Please use `enable` or `disable`.")
+
+        await self.conf.guild(ctx.guild).channels.set(channels)
 
     @checks.admin_or_permissions(manage_guild=True)
     @commands.guild_only()
     @markov.command()
-    async def channeldisable(self, ctx: commands.Context, channel: str = None):
-        """ Disable modeling of messages in a channel """
-        await self.channels_update(channel or ctx.channel.id, ctx.guild, False)
+    async def channelstatus(self, ctx: commands.Context):
+        """ Display the status of all channels in terms of modeling. """
+        enabled_channel_ids = await self.conf.guild(ctx.guild).channels()
+        all_channels = ctx.guild.text_channels
 
-    async def channels_update(self, channel, guild, add: bool = True):
-        """ Update list of channels in which modeling is allowed """
-        channels = await self.conf.guild(guild).channels()
-        if add:
-            channels.append(int(channel))
-        else:
-            channels.remove(int(channel))
-        await self.conf.guild(guild).channels.set(channels)
+        status_list = []
+        for ch in all_channels:
+            status = "Enabled" if ch.id in enabled_channel_ids else "Disabled"
+            status_list.append(f"{ch.name}: {status}")
+
+        status_output = "\n".join(status_list)
+        await ctx.send(f"Modeling Status:\n{status_output}")
 
     async def get_user_config(self, user: discord.abc.User, lazy: bool = True):
         """ Get a user config, optionally short circuiting if not enabled """
