@@ -19,6 +19,7 @@ class ThreadAlert(commands.Cog):
 
     @commands.Cog.listener()
     async def on_thread_create(self, thread: discord.Thread):
+        await thread.join()
         output_channel_id = await self.config.guild(thread.guild).output_channel()
         if output_channel_id:
             output_channel = self.bot.get_channel(output_channel_id)
