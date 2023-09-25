@@ -230,7 +230,10 @@ class Markov(commands.Cog):
         # Remove word boundaries from ngram; whitespace is added back later
         state = state.replace(" ", "")
         # Choose the next word taking into account recorded vector weights
-        gram = await self.choose_gram(model, state)
+        gram = ""
+        while gram == "":
+            gram = await self.choose_gram(model, state)
+
         # Don't worry about it ;)
         prepend_space = all((state != CONTROL,
                              gram[-1].isalnum() or gram in "\"([{|",
@@ -251,4 +254,4 @@ class Markov(commands.Cog):
                                k=1)  # Caution: basically magic
             return gram
         except:
-            return ' '
+            return ""
