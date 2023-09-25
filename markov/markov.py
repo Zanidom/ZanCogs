@@ -218,7 +218,7 @@ class Markov(commands.Cog):
             try:
                 gram = await generator(model, state)
             except:
-                gram = " "
+                return
             output.append(gram)
             # Produce sliding state window (ngram)
             i += 1
