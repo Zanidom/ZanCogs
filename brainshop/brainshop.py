@@ -24,7 +24,7 @@ SOFTWARE.
 
 import re
 import aiohttp
-
+from enum import Enum
 import discord
 from redbot.core import commands, Config
 from redbot.core.utils.chat_formatting import humanize_list
@@ -33,6 +33,10 @@ BRAINSHOP_ERROR = "Something went wrong while accessing the BrainShop API."
 BRAINSHOP_TIMEOUT = "The BrainShop API timed out; please try again later."
 CUSTOM_EMOJI = re.compile("<(?P<animated>a?):(?P<name>[a-zA-Z0-9_]{2,32}):(?P<id>[0-9]{18,22})>")  # Thanks R.Danny
 
+class UserOption(Enum):
+    OPTIN = 1
+    OPTOUT = 2
+    OPTREPLYONLY = 3
 
 class BrainShop(commands.Cog):
     """
@@ -51,8 +55,12 @@ class BrainShop(commands.Cog):
             "auto": True,
             "channels": [],
             "allowlist": [],
-            "blocklist": []
+            "blocklist": [],
         }
+        default_member = {
+            "option": None
+        }
+        self.config.register_member(**default_member)
         self.config.register_global(**default_global)
         self.config.register_guild(**default_guild)
 
@@ -77,18 +85,25 @@ class BrainShop(commands.Cog):
     @commands.Cog.listener("on_message_without_command")
     async def _message_listener(self, message: discord.Message):
 
-        isResponse = message.reference
-
-        # Ignore bots
-        if message.author.bot:
-            return
+        user_option = UserOption(await self.config.member(message.author).option())
+        if message.reference:
+            # Fetch the replied message to get its author's ID
+            isResponse = True
+            replied_msg = await message.channel.fetch_message(message.reference.message_id)
+            
+            # Check if the replied message's author is the bot and if the bot is mentioned in the message
+            if replied_msg.author.id == self.bot.user.id and self.bot.user in message.mentions:
+                replyPing = True
+            else:
+                replyPing = False
+        else:
+            isResponse = False
 
         global_auto = await self.config.auto()
         starts_with_mention = message.content.startswith((f"<@{self.bot.user.id}>", f"<@!{self.bot.user.id}>"))
 
         # Command is in DMs
         if not message.guild:
-
             if not starts_with_mention or not global_auto:
                 return
 
@@ -112,6 +127,10 @@ class BrainShop(commands.Cog):
             #If we're continuing because it's a response, validate that it's a reply to slutbot
             if isResponse is not None:
                 if isResponse.resolved.author.id != self.bot.user.id:
+                    return
+                if user_option is UserOption.OPTOUT:
+                    return
+                if user_option is UserOption.OPTREPLYONLY and replyPing == False:
                     return
 
             # Check block/allow-lists
@@ -161,6 +180,8 @@ class BrainShop(commands.Cog):
         if hasattr(ctx.message, "reply"):
             return await ctx.reply(response, mention_author=False)
         return await ctx.send(response)
+
+
 
     @commands.group(name="brainshopset")
     async def _brainshopset(self, ctx: commands.Context):
@@ -313,3 +334,22 @@ class BrainShop(commands.Cog):
 
         await ctx.tick()
         return await ctx.author.send(embed=embed)
+
+    @commands.group(name="botresponse")
+    async def botresponse(self, ctx: commands.Context):
+        """Bot response settings"""
+
+    @botresponse.command(name="optin")
+    async def optin(self, ctx):
+        await self.config.member(ctx.author).option.set(UserOption.OPTIN.value)
+        await ctx.send(f"{ctx.author.mention}, you have opted into reply messages.")
+
+    @botresponse.command("optout")
+    async def optout(self, ctx):
+        await self.config.member(ctx.author).option.set(UserOption.OPTOUT.value)
+        await ctx.send(f"{ctx.author.mention}, you have opted out of reply messages.")
+
+    @botresponse.command("optreplyonly")
+    async def optreplyonly(self, ctx):
+        await self.config.member(ctx.author).option.set(UserOption.OPTREPLYONLY.value)
+        await ctx.send(f"{ctx.author.mention}, you have set your preference to when reply pings are on only.")
