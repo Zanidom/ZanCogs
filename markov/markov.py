@@ -217,13 +217,16 @@ class Markov(commands.Cog):
             # Generate and store next gram
             try:
                 gram = await generator(model, state)
+                output.append(gram)
+                # Produce sliding state window (ngram)
+                i += 1
+                j = i - depth if i > depth else 0
+                state = "".join(output[j:i])
             except:
-                return
-            output.append(gram)
-            # Produce sliding state window (ngram)
-            i += 1
-            j = i - depth if i > depth else 0
-            state = "".join(output[j:i])
+                output.append(" ")
+                i += 1
+                j = i - depth if i > depth else 0
+                state = "".join(output[j:i])
         if not output:
             return
         return "".join(output[:-1])
@@ -232,7 +235,6 @@ class Markov(commands.Cog):
         """ Generate text for word-mode vectorization """
         # Remove word boundaries from ngram; whitespace is added back later
         state = state.replace(" ", "")
-        state = state.translate(str.maketrans('', '', ':;()[]*<>}{'))
         # Choose the next word taking into account recorded vector weights
         gram = await self.choose_gram(model, state)
 
@@ -249,10 +251,7 @@ class Markov(commands.Cog):
 
     async def choose_gram(self, model: dict, state: str):
         """ Here lies the secret sauce """
-        try:
-            gram, = random.choices(population=list(model[state].keys()),
-                               weights=list(model[state].values()),
-                               k=1)  # Caution: basically magic
-            return gram
-        except:
-            return ""
+        gram, = random.choices(population=list(model[state].keys()),
+                           weights=list(model[state].values()),
+                           k=1)  # Caution: basically magic
+        return gram
