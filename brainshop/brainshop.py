@@ -126,7 +126,7 @@ class BrainShop(commands.Cog):
                     return
             #If we're continuing because it's a response, validate that it's a reply to slutbot
             if isResponse is not None:
-                if isResponse.resolved.author.id != self.bot.user.id:
+                if message.reference.resolved.author.id != self.bot.user.id:
                     return
                 if user_option is UserOption.OPTOUT:
                     return
