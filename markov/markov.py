@@ -206,13 +206,9 @@ class Markov(commands.Cog):
             status = "On" if ch.id in enabled_channel_ids else "Off"
             if status == "On":
                 enabled_channels.append(f"{ch.name}: {status}")
-            else:
-                disabled_channels.append(f"{ch.name}: {status}")
 
         status_output = "\n".join(enabled_channels)
         await ctx.send(f"Modeling Status - Enabled:\n```{status_output}```")
-        status_output = "\n".join(disabled_channels)
-        await ctx.send(f"Modeling Status - Disabled:\n```{status_output}```")
 
     async def get_user_config(self, user: discord.abc.User, lazy: bool = True):
         """ Get a user config, optionally short circuiting if not enabled """
