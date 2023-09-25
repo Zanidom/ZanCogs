@@ -200,7 +200,6 @@ class Markov(commands.Cog):
         all_channels = ctx.guild.text_channels
 
         enabled_channels = []
-        disabled_channels = []
 
         for ch in all_channels:
             status = "On" if ch.id in enabled_channel_ids else "Off"
@@ -269,8 +268,6 @@ class Markov(commands.Cog):
 
     async def choose_gram(self, model: dict, state: str):
         """ Here lies the secret sauce """
-        print(state)
-        print (model)
         try:
             gram, = random.choices(population=list(model[state].keys()),
                                weights=list(model[state].values()),
