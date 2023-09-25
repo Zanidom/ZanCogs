@@ -245,8 +245,10 @@ class Markov(commands.Cog):
     async def choose_gram(self, model: dict, state: str):
         """ Here lies the secret sauce """
         cleaned_state = state.translate(str.maketrans('', '', ':;()[]*<>}{'))
-
-        gram, = random.choices(population=list(model[cleaned_state].keys()),
+        try:
+            gram, = random.choices(population=list(model[cleaned_state].keys()),
                                weights=list(model[cleaned_state].values()),
                                k=1)  # Caution: basically magic
-        return gram
+            return gram
+        except:
+            return ' '
