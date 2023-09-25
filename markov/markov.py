@@ -215,7 +215,10 @@ class Markov(commands.Cog):
         state = CONTROL
         while gram.strip() != CONTROL:
             # Generate and store next gram
-            gram = await generator(model, state)
+            try:
+                gram = await generator(model, state)
+            except:
+                gram = " "
             output.append(gram)
             # Produce sliding state window (ngram)
             i += 1
@@ -231,9 +234,7 @@ class Markov(commands.Cog):
         state = state.replace(" ", "")
         state = state.translate(str.maketrans('', '', ':;()[]*<>}{'))
         # Choose the next word taking into account recorded vector weights
-        gram = ""
-        while gram == "":
-            gram = await self.choose_gram(model, state)
+        gram = await self.choose_gram(model, state)
 
         # Don't worry about it ;)
         prepend_space = all((state != CONTROL,
@@ -249,8 +250,8 @@ class Markov(commands.Cog):
     async def choose_gram(self, model: dict, state: str):
         """ Here lies the secret sauce """
         try:
-            gram, = random.choices(population=list(model[cleaned_state].keys()),
-                               weights=list(model[cleaned_state].values()),
+            gram, = random.choices(population=list(model[state].keys()),
+                               weights=list(model[state].values()),
                                k=1)  # Caution: basically magic
             return gram
         except:
