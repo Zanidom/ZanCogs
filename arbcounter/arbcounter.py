@@ -1,6 +1,7 @@
 from redbot.core import checks, Config, commands
 import discord 
 import re
+import io
 
 class ArbCounter(commands.Cog):
     def __init__(self, bot):
@@ -15,10 +16,11 @@ class ArbCounter(commands.Cog):
             }
         self.config.register_guild(**default_guild)
 
-    @commands.group(name="ac", autohelp=False)
+    @commands.group(name="ac", autohelp=False, invoke_without_command=True)
     async def arbcounter(self, ctx, *, lastMessage = ""):
         """Arbitrary counter commands"""
         if ctx.invoked_subcommand is None:
+            print("Break")
             if lastMessage == "" or len(lastMessage) < 2:
                 return
 
@@ -26,7 +28,7 @@ class ArbCounter(commands.Cog):
             await self.check_server_settings(guild)
             serverConfig = await self.config.guild(guild).Config()
 
-            indivStrings = lastMessage.split(" ")
+            indivStrings = lastMessage.replace('\n','').split(" ")
             indivStrings = [s for s in indivStrings if s.strip()]
 
             if indivStrings[0].lower() == "set":
@@ -53,23 +55,22 @@ class ArbCounter(commands.Cog):
             mesSuffix = lastMessage[-2:]
 
             if mesSuffix == "++":
-                tokenName = lastMessage[:-2].lower()
+                tokenName = ''.join(indivStrings)[:-2].lower()
+
                 try:
                     val = int(serverConfig[tokenName]) + 1
                     serverConfig[tokenName] = val
                 except:
-                    val = 1
-                    serverConfig[tokenName] = val
+                    await ctx.send(f"`{tokenName}` isn't initialized yet. Try using ac set {tokenName} first.")
                 await self.config.guild(guild).Config.set(serverConfig) #save our changes
                 await ctx.send(f"`{tokenName}` is now {val}.")
             elif mesSuffix == "--":
-                tokenName = lastMessage[:-2].lower()
+                tokenName = ''.join(indivStrings)[:-2].lower()
                 try:
                     val = int(serverConfig[tokenName]) - 1
                     serverConfig[tokenName] = val
                 except:
-                    val = -1
-                    serverConfig[tokenName] = val
+                    await ctx.send(f"`{tokenName}` isn't initialized yet. Try using ac set {tokenName} first.")
 
                 await self.config.guild(guild).Config.set(serverConfig) #save our changes
                 await ctx.send(f"`{tokenName}` is now {val}.")
@@ -80,7 +81,8 @@ class ArbCounter(commands.Cog):
                     try:
                         val = int(serverConfig[lastMessage.lower()])
                     except:
-                        val = 0
+                        await ctx.send(f"`{lastMessage.lower()}` has no value yet.")
+                        return True
                     await ctx.send(f"`{lastMessage.lower()}` is {val}.")
                     pass
                 else:
@@ -128,8 +130,9 @@ class ArbCounter(commands.Cog):
         pass
 
     @arbcounter.command(name="search")
-    async def ac_searchcom(self, ctx, counterToken: str):
+    async def ac_searchcom(self, ctx, searchString: str):
         """Search all tokens for a given string - ac search <search>"""
+        await self.ac_search(ctx, searchString)
         pass   
 
     async def check_server_settings(self, guild):
@@ -149,7 +152,7 @@ class ArbCounter(commands.Cog):
         guild = ctx.guild
         serverConfig = await self.config.guild(guild).Config()
 
-        results = {k: v for k, v in serverConfig.items() if search_term.lower() in k.lower()}
+        results = {k: v for k, v in serverConfig.items() if search_term.lower() in k.lower() and k != "Registered"}
 
         if not results:
             await ctx.send(f"No results found for '{search_term}'.")
@@ -157,8 +160,17 @@ class ArbCounter(commands.Cog):
         
         output = "\n".join([f"{k}: {v}" for k, v in results.items()])
 
-        embedOut = discord.Embed(title=search_term, description=output)
-        await ctx.send(embed = embedOut)
+        if len(output) > 4000:
+            middle = len(output) // 2  # Integer division to get the midpoint
+            first_half = output[:middle]
+            second_half = output[middle:]
+            embedOut = discord.Embed(title=search_term, description=first_half)
+            await ctx.send(embed = embedOut)
+            embedOut = discord.Embed(title=search_term, description=second_half)
+            await ctx.send(embed = embedOut)
+        else:
+            embedOut = discord.Embed(title=search_term, description=output)
+            await ctx.send(embed = embedOut)
 
     async def ParseNonCommand(self, ctx, instring:str):
         instring = re.sub(r'\s+', '', instring)
@@ -184,3 +196,43 @@ class ArbCounter(commands.Cog):
             return serverConfig[token]
         else:
             return None
+        
+    @arbcounter.command(name="clean")
+    @checks.admin_or_permissions(manage_guild=True)
+    async def cleandata(self, ctx):
+        """Cleans the dictionary by removing invalid entries."""
+        guild = ctx.guild
+        serverConfig = await self.config.guild(guild).Config()
+        serverConfig = clean_dictionary(serverConfig)
+        await self.config.guild(guild).Config.set(serverConfig) #save our changes
+        await ctx.send("Dictionary has been cleaned.")
+
+    @arbcounter.command(name="download")
+    @checks.admin()
+    async def download(self, ctx):
+        """Download the data as a text file."""
+        guild = ctx.guild
+        serverConfig = await self.config.guild(guild).Config()
+        content = "\n".join([f"{key}: {value}" for key, value in serverConfig.items()])
+        
+        with io.StringIO(content) as file:
+            discord_file = discord.File(file, filename="data.txt")
+            await ctx.author.send("Here's your data:", file=discord_file)
+            await ctx.send("Data has been sent to you in a private message.")
+
+def clean_dictionary(data: dict) -> dict:
+    """
+    Remove keys from dictionary which have whitespaces or upper-case characters, excluding the "Registered" key.
+    
+    Parameters:
+    - data (dict): The dictionary to clean.
+
+    Returns:
+    - dict: Cleaned dictionary.
+    """
+    to_remove = [key for key in data if key != "Registered" and (any(c.isspace() or c.isupper() or '\n' in c for c in key))]
+
+    for key in to_remove:
+        del data[key]
+
+    return data
