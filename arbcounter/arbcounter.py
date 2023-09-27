@@ -62,6 +62,7 @@ class ArbCounter(commands.Cog):
                     serverConfig[tokenName] = val
                 except:
                     await ctx.send(f"`{tokenName}` isn't initialized yet. Try using ac set {tokenName} first.")
+                    return
                 await self.config.guild(guild).Config.set(serverConfig) #save our changes
                 await ctx.send(f"`{tokenName}` is now {val}.")
             elif mesSuffix == "--":
@@ -71,7 +72,7 @@ class ArbCounter(commands.Cog):
                     serverConfig[tokenName] = val
                 except:
                     await ctx.send(f"`{tokenName}` isn't initialized yet. Try using ac set {tokenName} first.")
-
+                    return
                 await self.config.guild(guild).Config.set(serverConfig) #save our changes
                 await ctx.send(f"`{tokenName}` is now {val}.")
 
