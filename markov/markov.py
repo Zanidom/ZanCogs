@@ -279,5 +279,5 @@ class Markov(commands.Cog):
                                weights=list(model[state].values()),
                                k=1)  # Caution: basically magic
             except: 
-                gram, = random.choice(random.choice(list(model.items())))
+                gram, = random.choice(random.choice(list(model.items()).values()))
         return gram
