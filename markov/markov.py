@@ -279,7 +279,7 @@ class Markov(commands.Cog):
                                weights=list(model[state].values()),
                                k=1)  # Caution: basically magic
             except: 
-                newVar = random.choices(list(model.values()))
+                newVar = key, val = random.choice(list(model.items()))
                 gram, = random.choices(population=list(newVar.keys()),
                                weights=list(newVar.values()),
                                k=1)
