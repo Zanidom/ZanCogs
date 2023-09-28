@@ -273,8 +273,15 @@ class Markov(commands.Cog):
                                weights=list(model[state].values()),
                                k=1)  # Caution: basically magic
         except:
-            state = state.replace(" ", "")
-            gram, = random.choices(population=list(model[state].keys()),
+            try:
+                state = state.replace(" ", "")
+                gram, = random.choices(population=list(model[state].keys()),
                                weights=list(model[state].values()),
                                k=1)  # Caution: basically magic
+            except: 
+                newVar = random.choices(model)
+                random.choices(population=list(newVar.keys()),
+                               weights=list(newVar.values()),
+                               k=1)
+
         return gram
