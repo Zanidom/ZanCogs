@@ -121,9 +121,8 @@ class BrainShop(commands.Cog):
 
             # Not in auto-channel
             if message.channel.id not in guild_settings["channels"]:
-                if (
-                        (isResponse is False and      
-                        not starts_with_mention) or  # Does not start with mention or reply
+                if (      
+                        not starts_with_mention or  # Does not start with mention or reply
                         not (guild_settings["auto"] or global_auto)  # Both guild & global auto are toggled off
                 ):
                     return
