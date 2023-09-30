@@ -5,7 +5,7 @@ import random
 class Raffle(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.config = Config.get_conf(self, identifier=71812389075)
+        self.config = Config.get_conf(self, identifier=71812389074)
         default_global = {
             "entries": {}
         }
