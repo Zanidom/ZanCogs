@@ -58,7 +58,7 @@ class BrainShop(commands.Cog):
             "blocklist": [],
         }
         default_member = {
-            "option": 3
+            "option": 1
         }
         self.config.register_member(**default_member)
         self.config.register_global(**default_global)
@@ -125,15 +125,23 @@ class BrainShop(commands.Cog):
                         not starts_with_mention or  # Does not start with mention or reply
                         not (guild_settings["auto"] or global_auto)  # Both guild & global auto are toggled off
                 ):
+                    if message.author.id == 430064150438215681:
+                        await message.reply(f"Option Five.")
                     return
                 
             #If we're continuing because it's a response, validate that it's a reply to slutbot
             if isResponse is True:
                 if message.reference.resolved.author.id != self.bot.user.id:
+                    if message.author.id == 430064150438215681:
+                        await message.reply(f"Option one.")
                     return
                 if user_option is UserOption.OPTOUT:
+                    if message.author.id == 430064150438215681:
+                        await message.reply(f"Option Two.")
                     return
                 if user_option is UserOption.OPTREPLYONLY and replyPing == False:
+                    if message.author.id == 430064150438215681:
+                        await message.reply(f"Option Three.")
                     return
 
             # Check block/allow-lists
@@ -141,6 +149,8 @@ class BrainShop(commands.Cog):
                     (guild_settings["allowlist"] and message.channel.id not in guild_settings["allowlist"]) or  # Channel not in allowlist
                     (guild_settings["blocklist"] and message.channel.id in guild_settings["blocklist"])  # Channel in blocklist
             ):
+                if message.author.id == 430064150438215681:
+                    await message.reply(f"Option Four.")
                 return
 
         # Get BrainShop api key
