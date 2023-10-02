@@ -47,7 +47,7 @@ class BrainShop(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
-        self.config = Config.get_conf(self, identifier=14000605)
+        self.config = Config.get_conf(self, identifier=14000600)
         default_global = {
             "auto": True
         }
@@ -58,7 +58,7 @@ class BrainShop(commands.Cog):
             "blocklist": [],
         }
         default_member = {
-            "option": 2
+            "option": UserOption.OPTREPLYONLY
         }
         self.config.register_member(**default_member)
         self.config.register_global(**default_global)

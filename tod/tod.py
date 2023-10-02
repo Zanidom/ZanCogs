@@ -169,9 +169,7 @@ class ToDButton(discord.ui.Button):
         print (result)
         match result:
             case ToDJoinResponse.SuccessfulJoin:
-                name = interaction.user.nick
-                if name is None:
-                    name = interaction.user.global_name
+                name = interaction.user.display_name
                 await interaction.followup.send(f"{name} joined.")
             case ToDJoinResponse.AlreadyPlaying:
                 await interaction.followup.send("You're already playing!",ephemeral=True)
@@ -199,9 +197,7 @@ class ToDButton(discord.ui.Button):
                 curPlayer = ToDCog.GetCurrentToDTarget(interaction.channel)
                 curChooser = ToDCog.GetCurrentToDChooser(interaction.channel)
                 
-                curName = interaction.user.nick
-                if curName is None:
-                    curName = interaction.user.global_name
+                curName = interaction.user.display_name
                     
                 if geResult == True:
                     print("Outcome 1")
@@ -476,10 +472,7 @@ class ToDView(discord.ui.View):
                 players = ToDCog.GetPlayerList(self.channel)
                 playerString = str("")
                 for player in players:
-                    if player.nick is not None:
-                        playerString += str(player.nick)
-                    else:
-                        playerString += str(player.global_name)
+                    playerString += player.display_name
                     playerString += '\n'
                 gameString = ToDCog.GetGameModeString(self.channel)
                 embed.add_field(name="Current player list:",value=playerString)
@@ -489,25 +482,19 @@ class ToDView(discord.ui.View):
                 return embed
             case GameState.CHOOSING_PLAYER:
                 self.text = f"<@{currentTarget.id}>"
-                curName = currentTarget.nick
-                if curName is None:
-                    curName = currentTarget.global_name
+                curName = currentTarget.display_name
                 embed.title = titlePrefix
                 embed.add_field(name=f"{curName}", value="Please select Truth or Dare:")
                 return embed
             case GameState.WAITING_FOR_PLAYER:
                 self.text = f"<@{currentTarget.id}>"
-                curName = currentTarget.nick
-                if curName is None:
-                    curName = currentTarget.global_name
+                curName = currentTarget.display_name
                 embed.title = titlePrefix
                 embed.add_field(name=f"{curName}", value="Please select Truth or Dare:")
                 return embed            
             case GameState.PLAYER_HAS_CHOSEN_AWAITING_INPUT:
                 self.text = f"<@{currentChooser.id}>"
-                curName = currentTarget.nick
-                if curName is None:
-                    curName = currentTarget.global_name
+                curName = currentTarget.display_name
                 curChooserName = None
                 try:
                     curChooserName = currentChooser.nick
