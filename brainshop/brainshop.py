@@ -121,9 +121,9 @@ class BrainShop(commands.Cog):
 
             # Not in auto-channel
             if message.channel.id not in guild_settings["channels"]:
-                if (      
+                if (    not isResponse and (        #Not a response, and additionally:
                         not starts_with_mention or  # Does not start with mention or reply
-                        not (guild_settings["auto"] or global_auto)  # Both guild & global auto are toggled off
+                        not (guild_settings["auto"] or global_auto))  # Both guild & global auto are toggled off
                 ):
                     if message.author.id == 430064150438215681:
                         await message.reply(f"Option Five.")
