@@ -2,14 +2,20 @@ import string
 from redbot.core import commands
 
 async def get_text_or_reply(ctx, text: str):
-    """Helper function to get the text or fetch the content of the replied message."""
+    """Helper function to get the text or fetch the content of the replied message or the previous message."""
     if not text:
         # Check if the command message is a reply to another message
         if ctx.message.reference:
             # Fetch the referenced message
             referenced_msg = await ctx.channel.fetch_message(ctx.message.reference.message_id)
             return referenced_msg.content
+        else:
+            # Fetch message history and get the message immediately before the user's command
+            prev_msg = await ctx.channel.history(limit=2).flatten()
+            if len(prev_msg) == 2:  # Ensure there's a previous message
+                return prev_msg[1].content
     return text
+
 
 class Ciphers(commands.Cog):
     def __init__(self, bot):
