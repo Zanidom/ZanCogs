@@ -1,0 +1,8 @@
+{
+  "author": [ "Zan (Zanidom)" ],
+    "short" : "Cog for outputting ciphertext",
+    "description" : "Cog that lets a user apply various cipher methods to given strings.",
+    "name" : "ciphers",
+    "tags" : ["Ciphers","Puzzles"],
+    "install_msg" : "Thank you for installing Zan's Ciphers cog!"
+}
