@@ -33,7 +33,6 @@ class Ciphers(commands.Cog):
             string.ascii_lowercase[13:] + string.ascii_lowercase[:13] +
             string.ascii_uppercase[13:] + string.ascii_uppercase[:13] +
             "5678901234")
-        print(result)
         await ctx.send(text.translate(result))
 
     @commands.command(name="ROT47", aliases=['rot47'])
