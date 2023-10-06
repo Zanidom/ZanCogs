@@ -11,9 +11,12 @@ async def get_text_or_reply(ctx, text: str):
             return referenced_msg.content
         else:
             # Fetch message history and get the message immediately before the user's command
-            prev_msg = await ctx.channel.history(limit=2).flatten()
-            if len(prev_msg) == 2:  # Ensure there's a previous message
-                return prev_msg[1].content
+            messages = []
+            async for message in ctx.channel.history(limit=2):
+                messages.append(message)
+                
+            if len(messages) == 2:  # Ensure there's a previous message
+                return messages[0].content  # The first message is the user's command, so we take the second
     return text
 
 
