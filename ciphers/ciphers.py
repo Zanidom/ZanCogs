@@ -16,7 +16,7 @@ async def get_text_or_reply(ctx, text: str):
                 messages.append(message)
                 
             if len(messages) == 2:  # Ensure there's a previous message
-                return messages[0].content  # The first message is the user's command, so we take the second
+                return messages[1].content  # The first message is the user's command, so we take the second
     return text
 
 
