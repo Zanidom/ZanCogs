@@ -91,8 +91,8 @@ class Casino(Database, commands.Cog):
     async def craps(self, ctx: commands.Context, bet: int):
         """Plays a modified version of craps
 
-        The player wins 7x their bet on a come-out roll of 7.
-        A comeout roll of 11 is an automatic win (standard mutlipliers apply).
+        The player wins big on a come-out roll of 7.
+        A comeout roll of 11 is an automatic win (standard multipliers apply).
         The player will lose on a comeout roll of 2, 3, or 12.
         Otherwise a point will be established. The player will keep
         rolling until they hit a 7 (and lose) or their point number.

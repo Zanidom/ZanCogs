@@ -138,7 +138,7 @@ class Core:
             return False, bet, msg.format(d1, d2), message
 
         if result == 7:
-            bet *= 3
+            bet *= 1.5
             return True, bet, msg.format(d1, d2), message
         elif result == 11:
             return True, bet, msg.format(d1, d2), message
