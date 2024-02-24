@@ -54,11 +54,12 @@ class jentrigger(commands.Cog):
         """Trigger a Jen edge."""
         guild_data = await self.config.guild(ctx.guild).all()
         cost = guild_data["cost"]
+        percentage = guild_data["percentage"]
         
         if not await self.check_currency(ctx.author, cost):
             return await ctx.send("You do not have enough currency to perform this action.")
         
-        embed = Embed(title="Confirmation", description=f"This will cost {cost}, are you sure?", color=discord.Color.blue())
+        embed = Embed(title="Confirmation", description=f"This will cost {cost}.\n{int(cost * (percentage / 100))} goes to Jen and {int(cost - cost *(percentage / 100))} will be vanished into the ether.\n\nAre you sure?", color=discord.Color.blue())
         
         view = ConfirmationView(ctx.author, cost, self)
         
@@ -93,11 +94,11 @@ class jentrigger(commands.Cog):
         """Set what percentage cut Jen gets!"""
         if 0 <= percentage <= 100:
             await self.config.guild(ctx.guild).percentage.set(percentage)
-            await ctx.send(f"Percentage set to {percentage}%.")
+            await ctx.send(f"Jen's Cut percentage set to {percentage}%.")
         else:
-            await ctx.send("Percentage must be between 1 and 100.")
+            await ctx.send("Percentage must be between 0 and 100.")
 
-    @jenset.command(name="recipient")
+    @jenset.command(name="recipient", aliases=['user'])
     async def set_recipient_user(self, ctx, user: discord.Member):
         """Set the recipient user who receives the currency."""
         await self.config.guild(ctx.guild).recipient_user.set(user.id)
@@ -130,7 +131,6 @@ class jentrigger(commands.Cog):
         url = str(await self.config.guild(guild).webhook_url())
         data_template = str(await self.config.guild(guild).webhook_data_template())
         data =  data_template.replace("$USERNAME$",user.name)
-        print (url + " - " + data)
         if url == "unconfigured":
             raise CommandError("Webhook URL has not been configured.")
         headers = {'Content-Type': 'application/json'}
@@ -145,3 +145,26 @@ class jentrigger(commands.Cog):
             except aiohttp.ClientError as e:
                 raise CommandError(f"An error occurred while sending the webhook request: {type(e)}: {e}")
     
+    @commands.command(name="jentriggerconfig")
+    @checks.admin_or_permissions(manage_guild=True)
+    async def jentrigger_config(self, ctx):
+        """Displays the current configuration for JenTrigger."""
+        guild_settings = await self.config.guild(ctx.guild).all()
+
+        # Create an embed to display the settings
+        embed = discord.Embed(title=f"JenTrigger Configuration for {ctx.guild.name}", color=discord.Color.blue())
+
+        # Add fields for each configuration option
+        embed.add_field(name="Cost", value=str(guild_settings["cost"]), inline=False)
+        embed.add_field(name="Webhook URL", value=guild_settings["webhook_url"] or "Not configured", inline=False)
+        embed.add_field(name="Webhook Data Template", value=guild_settings["webhook_data_template"], inline=False)
+        embed.add_field(name="Percentage", value=str(guild_settings["percentage"]) + "%", inline=False)
+
+        recipient_user = guild_settings["recipient_user"]
+        if recipient_user:
+            recipient_user = ctx.guild.get_member(recipient_user)
+            recipient_name = recipient_user.display_name if recipient_user else "User not found"
+        else:
+            recipient_name = "No recipient set"
+        embed.add_field(name="Recipient User", value=recipient_name, inline=False)
+        await ctx.send(embed=embed)
