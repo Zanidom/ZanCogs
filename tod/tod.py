@@ -1314,6 +1314,7 @@ class ToDCog(commands.Cog):
         await self.TryJoinPlayer(ctx.channel, ctx.author)
         await self.games[ctx.channel.id].SpawnView(30)
 
+    @commands.admin_or_permissions(manage_guild=True)
     @tod.command(name="clear", autohelp=False)
     async def todclear(self, ctx):
         print('todclear')
