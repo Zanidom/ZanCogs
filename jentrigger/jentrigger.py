@@ -20,7 +20,7 @@ class ConfirmationView(discord.ui.View):
             return await interaction.response.send_message("You cannot confirm this action.", ephemeral=True)
         try:
             await self.cog.send_webhook_request(interaction.user, interaction.guild)
-            await self.cog.deduct_currency(interaction.user, self.cost)
+            await self.cog.deduct_currency(interaction.guild, interaction.user)
             await interaction.response.send_message("Edge confirmed, and sent to Jen.", ephemeral=False)
         except CommandError as e:
             await interaction.response.send_message(f"Error: {e}", ephemeral=True)
@@ -109,13 +109,14 @@ class jentrigger(commands.Cog):
         current_balance = await bank.get_balance(user)
         return current_balance >= amount
 
-    async def deduct_currency(self, guild, user, amount):
+    async def deduct_currency(self, guild, user):
         """Deduct the specified amount of currency, adjusted by percentage, and optionally transfer to a recipient."""
         settings = await self.config.guild(guild).all()
+        cost = settings["cost"]
         percentage = settings["percentage"]
         recipient_id = settings["recipient_user"]
 
-        adjusted_amount = int(amount * (percentage / 100))
+        adjusted_amount = int(cost * (percentage / 100))
 
         await bank.withdraw_credits(user, adjusted_amount)
     
@@ -124,7 +125,7 @@ class jentrigger(commands.Cog):
             if recipient:
                 await bank.deposit_credits(recipient, adjusted_amount)
             else:    
-                await bank.withdraw_credits(user, amount)
+                await bank.withdraw_credits(user, cost)
 
     async def send_webhook_request(self, user, guild):
         """Send a PUT request to the configured webhook URL."""
