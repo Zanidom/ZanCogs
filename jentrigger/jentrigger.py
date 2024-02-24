@@ -18,13 +18,10 @@ class ConfirmationView(discord.ui.View):
     async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user != self.user:
             return await interaction.response.send_message("You cannot confirm this action.", ephemeral=True)
-        print("passed auth check")
         try:
             await self.cog.send_webhook_request(interaction.user, interaction.guild)
-            print("passed swr check")
             await self.cog.deduct_currency(interaction.user, self.cost)
-            print("passed dc check")
-            await interaction.response.send_message("Action confirmed, currency deducted, and Jen Triggered 😎", ephemeral=False)
+            await interaction.response.send_message("Edge confirmed, and sent to Jen.", ephemeral=False)
         except CommandError as e:
             await interaction.response.send_message(f"Error: {e}", ephemeral=True)
         await interaction.message.delete()
@@ -37,18 +34,35 @@ class ConfirmationView(discord.ui.View):
         await interaction.message.delete()
 
 class jentrigger(commands.Cog):
-    """JenTrigger Cog for triggering actions with confirmation and currency deduction."""
+    """Cog to let you buy edges for Jen!"""
     def __init__(self, bot):
         self.bot = bot
-        self.config = Config.get_conf(self, identifier=1234321, force_registration=True)
+        self.config = Config.get_conf(self, identifier=12343212, force_registration=True)
         
         default_guild = {
             "cost": 100,
             "webhook_url": "unconfigured",
-            "webhook_data_template": "$USERNAME$_triggered"
+            "webhook_data_template": "$USERNAME$_triggered",
+            "percentage": 100,  # New configuration option for percentage
+            "recipient_user": None  # New configuration option for recipient user (store as ID)
         }
         
         self.config.register_guild(**default_guild)
+
+    @commands.command(name="jentrigger", autohelp=False, aliases=["jenedge", "jengasm"])
+    async def jentrigger(self, ctx):
+        """Trigger a Jen edge."""
+        guild_data = await self.config.guild(ctx.guild).all()
+        cost = guild_data["cost"]
+        
+        if not await self.check_currency(ctx.author, cost):
+            return await ctx.send("You do not have enough currency to perform this action.")
+        
+        embed = Embed(title="Confirmation", description=f"This will cost {cost}, are you sure?", color=discord.Color.blue())
+        
+        view = ConfirmationView(ctx.author, cost, self)
+        
+        message = await ctx.send(embed=embed, view=view)
 
     @commands.group(name="jenset")
     @checks.admin_or_permissions(manage_guild=True)
@@ -58,9 +72,9 @@ class jentrigger(commands.Cog):
 
     @jenset.command(name="cost")
     async def set_cost(self, ctx, cost: int):
-        """Set the cost for triggering."""
+        """Set the cost for a jen edge."""
         await self.config.guild(ctx.guild).cost.set(cost)
-        await ctx.send(f"Cost for triggering set to {cost}.")
+        await ctx.send(f"Cost for edging set to {cost}.")
 
     @jenset.command(name="webhookurl")
     async def set_webhook_url(self, ctx, *, url: str):
@@ -70,22 +84,46 @@ class jentrigger(commands.Cog):
 
     @jenset.command(name="webhookdata")
     async def set_webhook_data_template(self, ctx, *, template: str):
-        """Set the webhook data template."""
+        """Set the webhook data template. User: $USERNAME$"""
         await self.config.guild(ctx.guild).webhook_data_template.set(template)
         await ctx.send("Webhook data template set.")
 
+    @jenset.command(name="percentage")
+    async def set_percentage(self, ctx, percentage: int):
+        """Set what percentage cut Jen gets!"""
+        if 0 <= percentage <= 100:
+            await self.config.guild(ctx.guild).percentage.set(percentage)
+            await ctx.send(f"Percentage set to {percentage}%.")
+        else:
+            await ctx.send("Percentage must be between 1 and 100.")
+
+    @jenset.command(name="recipient")
+    async def set_recipient_user(self, ctx, user: discord.Member):
+        """Set the recipient user who receives the currency."""
+        await self.config.guild(ctx.guild).recipient_user.set(user.id)
+        await ctx.send(f"Recipient user set to {user.display_name}.")
+
     async def check_currency(self, user, amount):
         """Check if the user has enough currency."""
-        # Get the user's current balance
         current_balance = await bank.get_balance(user)
-        
-        # Return True if the balance is sufficient, False otherwise
         return current_balance >= amount
 
-    async def deduct_currency(self, user, amount):
-        """Deduct the specified amount of currency from the user's account."""
-        # Withdraw the amount from the user's account
-        await bank.withdraw_credits(user, amount)
+    async def deduct_currency(self, guild, user, amount):
+        """Deduct the specified amount of currency, adjusted by percentage, and optionally transfer to a recipient."""
+        settings = await self.config.guild(guild).all()
+        percentage = settings["percentage"]
+        recipient_id = settings["recipient_user"]
+
+        adjusted_amount = int(amount * (percentage / 100))
+
+        await bank.withdraw_credits(user, adjusted_amount)
+    
+        if recipient_id is not None:
+            recipient = guild.get_member(recipient_id)
+            if recipient:
+                await bank.deposit_credits(recipient, adjusted_amount)
+            else:    
+                await bank.withdraw_credits(user, amount)
 
     async def send_webhook_request(self, user, guild):
         """Send a PUT request to the configured webhook URL."""
@@ -107,19 +145,3 @@ class jentrigger(commands.Cog):
             except aiohttp.ClientError as e:
                 raise CommandError(f"An error occurred while sending the webhook request: {type(e)}: {e}")
     
-
-    @commands.command(name="jentrigger")
-    async def jentrigger(self, ctx):
-        """Trigger a Jen edge."""
-        guild_data = await self.config.guild(ctx.guild).all()
-        cost = guild_data["cost"]
-        
-        if not await self.check_currency(ctx.author, cost):
-            return await ctx.send("You do not have enough currency to perform this action.")
-        
-        embed = Embed(title="Confirmation", description=f"This will cost {cost}, are you sure?", color=discord.Color.blue())
-        
-        view = ConfirmationView(ctx.author, cost, self)
-        
-        message = await ctx.send(embed=embed, view=view)
-
