@@ -191,7 +191,7 @@ class jentrigger(commands.Cog):
         def check_permissions(ctx):
             return ctx.author.guild_permissions.manage_guild or ctx.author.guild_permissions.administrator
         
-        if command_name.lower() in ["add", "set", "clear" "remove", "delete", "list"]:
+        if command_name.lower() in ["add", "set", "clear", "remove", "delete", "list"]:
             if not check_permissions(ctx):
                 await ctx.send("You do not have the necessary permissions to perform this action.")
                 return
