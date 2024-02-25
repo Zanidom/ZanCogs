@@ -129,7 +129,7 @@ class jentrigger(commands.Cog):
 
     async def action_post_embed(self, ctx, embed_config):
         """Post an embed in the specified channel based on embed_config."""
-        embed = discord.Embed(description=embed_config.get('text', 'Default text'),
+        embed = discord.Embed(description=embed_config.get('embedtext', 'Default text'),
                               color=discord.Color.from_str(embed_config.get('color', '#FFFFFF')))
         if 'embedtitle' in embed_config:
             embed.title = embed_config['embedtitle']
@@ -253,9 +253,8 @@ class jentrigger(commands.Cog):
                 await ctx.send("Something went wrong; please try again. Make sure you're mentioning a user.")
                 return
 
-        if (args_list[1] == "privatemessage"):
+        if (args_list[1] == "privatemessage" or args_list[1] == "embedtext" or args_list[1] == "embedtitle"):
             args_list[2] = " ".join(args_list[2:])
-            print (args_list[2])
 
         async with self.config.guild(ctx.guild).commands() as commands:
             if args_list[0] not in commands:
