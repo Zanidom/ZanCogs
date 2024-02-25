@@ -6,30 +6,37 @@ from redbot.core import bank
 import asyncio
 import aiohttp
 from discord.ext.commands import CommandError
+import re
 
 class ConfirmationView(discord.ui.View):
-    def __init__(self, user, cost, cog, *args, **kwargs):
+    def __init__(self, ctx, cost, cog, callback, command_name, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.user = user
+        self.ctx = ctx
         self.cost = cost
         self.cog = cog
+        self.callback = callback  # Store the callback function
+        self.command_name = command_name
 
     @discord.ui.button(label="Confirm", style=ButtonStyle.success, emoji="✅")
     async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if interaction.user != self.user:
+        if interaction.user != self.ctx.author:
             return await interaction.response.send_message("You cannot confirm this action.", ephemeral=True)
         try:
-            await self.cog.send_webhook_request(interaction.user, interaction.guild)
-            await self.cog.deduct_currency(interaction.guild, interaction.user)
-            await interaction.response.send_message("Edge confirmed, and sent to Jen.", ephemeral=False)
+            if asyncio.iscoroutinefunction(self.callback):
+                await self.callback(self.ctx)
+            else:
+                self.callback(self.ctx)
+                
+            await self.cog.deduct_currency(self.ctx, self.command_name)
+            await interaction.response.send_message("Action confirmed.", ephemeral=True)
         except CommandError as e:
             await interaction.response.send_message(f"Error: {e}", ephemeral=True)
         await interaction.message.delete()
 
     @discord.ui.button(label="Cancel", style=ButtonStyle.danger, emoji="🚫")
     async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if interaction.user != self.user:
-            return await interaction.response.send_message("You cannot deny this action.", ephemeral=True)
+        if interaction.user != self.ctx.author:
+            return await interaction.response.send_message("You cannot cancel this action.", ephemeral=True)
         await interaction.response.send_message("Action cancelled.", ephemeral=True)
         await interaction.message.delete()
 
@@ -37,135 +44,247 @@ class jentrigger(commands.Cog):
     """Cog to let you buy edges for Jen!"""
     def __init__(self, bot):
         self.bot = bot
-        self.config = Config.get_conf(self, identifier=12343212, force_registration=True)
+        self.config = Config.get_conf(self, identifier=123432123, force_registration=True)
         
         default_guild = {
-            "cost": 100,
-            "webhook_url": "unconfigured",
-            "webhook_data_template": "$USERNAME$_triggered",
-            "percentage": 100,  # New configuration option for percentage
-            "recipient_user": None  # New configuration option for recipient user (store as ID)
+            "commands": {}
         }
         
         self.config.register_guild(**default_guild)
 
-    @commands.command(name="jentrigger", autohelp=False, aliases=["jenedge", "jengasm"])
-    async def jentrigger(self, ctx):
-        """Trigger a Jen edge."""
-        guild_data = await self.config.guild(ctx.guild).all()
-        cost = guild_data["cost"]
-        percentage = guild_data["percentage"]
-        
-        if not await self.check_currency(ctx.author, cost):
-            return await ctx.send("You do not have enough currency to perform this action.")
-        
-        embed = Embed(title="Confirmation", description=f"This will cost {cost}.\n{int(cost * (percentage / 100))} goes to Jen and {int(cost - cost *(percentage / 100))} will be vanished into the ether.\n\nAre you sure?", color=discord.Color.blue())
-        
-        view = ConfirmationView(ctx.author, cost, self)
-        
-        message = await ctx.send(embed=embed, view=view)
+    def add_dynamic_command(self, guild, command_name):
+        """Dynamically add a Jen command to the bot."""
 
-    @commands.group(name="jenset")
-    @checks.admin_or_permissions(manage_guild=True)
-    async def jenset(self, ctx):
-        """Configuration settings for JenTrigger."""
-        pass
+        @commands.command(name=command_name)
+        async def _dynamic_command(ctx):
+            await self.dynamic_command_handler(ctx, command_name)
 
-    @jenset.command(name="cost")
-    async def set_cost(self, ctx, cost: int):
-        """Set the cost for a jen edge."""
-        await self.config.guild(ctx.guild).cost.set(cost)
-        await ctx.send(f"Cost for edging set to {cost}.")
+        self.__class__.__cog_commands__ = tuple(list(self.__class__.__cog_commands__) + [_dynamic_command])
+        self.bot.add_command(_dynamic_command)
 
-    @jenset.command(name="webhookurl")
-    async def set_webhook_url(self, ctx, *, url: str):
-        """Set the webhook URL."""
-        await self.config.guild(ctx.guild).webhook_url.set(url)
-        await ctx.send(f"Webhook URL set to {url}.")
 
-    @jenset.command(name="webhookdata")
-    async def set_webhook_data_template(self, ctx, *, template: str):
-        """Set the webhook data template. User: $USERNAME$"""
-        await self.config.guild(ctx.guild).webhook_data_template.set(template)
-        await ctx.send("Webhook data template set.")
+    def remove_dynamic_command(self, guild, command_name):
+        """Dynamically remove a Jen command from the bot."""
+        command = self.bot.get_command(command_name)
+        if command:
+            self.bot.remove_command(command_name)
 
-    @jenset.command(name="percentage")
-    async def set_percentage(self, ctx, percentage: int):
-        """Set what percentage cut Jen gets!"""
-        if 0 <= percentage <= 100:
-            await self.config.guild(ctx.guild).percentage.set(percentage)
-            await ctx.send(f"Jen's Cut percentage set to {percentage}%.")
-        else:
-            await ctx.send("Percentage must be between 0 and 100.")
+    async def deduct_currency(self, ctx, command_name):
+        """Deduct the specified amount of currency, adjusted by percentage, and optionally transfer to a recipient, based on a specific command's configuration."""
+        # Fetch the command-specific configuration
+        commands_config = await self.config.guild(ctx.guild).commands()
+        command_config = commands_config.get(command_name, {})
 
-    @jenset.command(name="recipient", aliases=['user'])
-    async def set_recipient_user(self, ctx, user: discord.Member):
-        """Set the recipient user who receives the currency."""
-        await self.config.guild(ctx.guild).recipient_user.set(user.id)
-        await ctx.send(f"Recipient user set to {user.display_name}.")
-
-    async def check_currency(self, user, amount):
-        """Check if the user has enough currency."""
-        current_balance = await bank.get_balance(user)
-        return current_balance >= amount
-
-    async def deduct_currency(self, guild, user):
-        """Deduct the specified amount of currency, adjusted by percentage, and optionally transfer to a recipient."""
-        settings = await self.config.guild(guild).all()
-        cost = settings["cost"]
-        percentage = settings["percentage"]
-        recipient_id = settings["recipient_user"]
+        cost = command_config.get("cost", 100)
+        percentage = command_config.get("percentage", 100) 
+        recipient_id = command_config.get("user", None) 
 
         adjusted_amount = int(cost * (percentage / 100))
 
-        await bank.withdraw_credits(user, adjusted_amount)
-    
+        await bank.withdraw_credits(ctx.author, adjusted_amount)
+
+        # If a recipient is specified, transfer the adjusted amount to them
         if recipient_id is not None:
-            recipient = guild.get_member(recipient_id)
+            recipient = ctx.guild.get_member(recipient_id)
             if recipient:
                 await bank.deposit_credits(recipient, adjusted_amount)
-            else:    
-                await bank.withdraw_credits(user, cost)
+            else:
+                await ctx.send(f"Recipient user with ID {recipient_id} not found in guild {ctx.guild.name}.")
 
-    async def send_webhook_request(self, user, guild):
-        """Send a PUT request to the configured webhook URL."""
-        url = str(await self.config.guild(guild).webhook_url())
-        data_template = str(await self.config.guild(guild).webhook_data_template())
-        data =  data_template.replace("$USERNAME$",user.name)
+    async def action_post_webhook(self, ctx, command_name):
+        """Send a PUT request to the configured webhook URL for a specific command."""
+        # Fetch the command-specific configuration
+        commands_config = await self.config.guild(ctx.guild).commands()
+        command_config = commands_config.get(command_name, {})
+        
+        url = command_config.get('webhookurl', 'unconfigured')
+        data_template = command_config.get('webhooktext', 'Default webhook message')
+        
+        # Replace placeholders in the data template
+        data = data_template.replace("$USERNAME$", ctx.author.name)
+        
         if url == "unconfigured":
-            raise CommandError("Webhook URL has not been configured.")
+            raise CommandError("Webhook URL has not been configured for this command.")
+        
         headers = {'Content-Type': 'application/json'}
         
         async with aiohttp.ClientSession() as session:
             try:
                 async with session.put(url, json={"data": data}, headers=headers) as response:
                     if response.status != 200:
+                        print (response)
                         raise CommandError("Failed to send webhook request.")
             except asyncio.TimeoutError:
                 raise CommandError("The webhook request timed out.")
             except aiohttp.ClientError as e:
-                raise CommandError(f"An error occurred while sending the webhook request: {type(e)}: {e}")
+                raise CommandError(f"An error occurred while sending the webhook request: {type(e).__name__}: {e}")
+
+    async def action_send_dm(self, user, message):
+        """Send a DM to the specified user with the given message."""
+        target = self.bot.get_user(user)
+        try:
+            await target.send(message)
+        except Exception as e:
+            print(f"Failed to send DM to {user} - {e}")
+
+    async def action_post_embed(self, ctx, embed_config):
+        """Post an embed in the specified channel based on embed_config."""
+        embed = discord.Embed(description=embed_config.get('text', 'Default text'),
+                              color=discord.Color.from_str(embed_config.get('color', '#FFFFFF')))
+        if 'embedtitle' in embed_config:
+            embed.title = embed_config['embedtitle']
+        if 'embedavatarurl' in embed_config:
+            embed.set_thumbnail(url=embed_config['embedavatarurl'])
+            print(embed_config['embedavatarurl'])
+
+        try:
+            await ctx.channel.send(embed=embed)
+        except discord.HTTPException as e:
+            print(f"Failed to send embed message: {e}.")
+
+
+    async def dynamic_command_handler(self, ctx, command_name):
+        """Handle the execution of dynamically added commands."""
+        commands_config = await self.config.guild(ctx.guild).commands()
+        command_config = commands_config.get(command_name)
+
+        if not command_config:
+            await ctx.send("This command is not configured.")
+            return
+        
+        cost = command_config.get('cost', 100)
+        percentage = command_config.get('percentage', 100)
+
+        from functools import partial
+        callback_action = partial(self.command_action_callback, command_name=command_name)
+
+        view = ConfirmationView(ctx=ctx, cost=cost, cog=self, callback=callback_action, command_name=command_name)
+        embed = Embed(title="Confirmation", description=f"This will cost {cost}.\n{int(cost * (percentage / 100))} goes to Jen and {int(cost - cost *(percentage / 100))} will be vanished into the ether.\n\nAre you sure?", color=discord.Color.blue())
+        
+        await ctx.send("Please confirm this action:", embed=embed, view=view)
     
-    @commands.command(name="jentriggerconfig")
-    @checks.admin_or_permissions(manage_guild=True)
-    async def jentrigger_config(self, ctx):
-        """Displays the current configuration for JenTrigger."""
-        guild_settings = await self.config.guild(ctx.guild).all()
+    async def command_action_callback(self, ctx, command_name):
+        commands_config = await self.config.guild(ctx.guild).commands()
+        command_config = commands_config.get(command_name, {})
+        if command_config['mode'] == 'dm':
+            message = command_config.get('privatemessage', 'Default message')
+            target = command_config.get('user', ctx.author.id)
+            await self.action_send_dm(target, message)
+        elif command_config['mode'] == 'webhook':
+            webhook_url = command_config.get('webhookurl', '')
+            if webhook_url:
+                await self.action_post_webhook(ctx, command_name)
+            else:
+                raise Exception("Command set to webhook but no URL configured.")
+        elif command_config['mode'] == 'embed':
+            await self.action_post_embed(ctx, command_config)
 
-        # Create an embed to display the settings
-        embed = discord.Embed(title=f"JenTrigger Configuration for {ctx.guild.name}", color=discord.Color.blue())
 
-        # Add fields for each configuration option
-        embed.add_field(name="Cost", value=str(guild_settings["cost"]), inline=False)
-        embed.add_field(name="Webhook URL", value=guild_settings["webhook_url"] or "Not configured", inline=False)
-        embed.add_field(name="Webhook Data Template", value=guild_settings["webhook_data_template"], inline=False)
-        embed.add_field(name="Percentage", value=str(guild_settings["percentage"]) + "%", inline=False)
+    @commands.command(name="jen", autohelp=False)
+    async def jen(self, ctx, command_name: str, *args):
+        """List of commands for Jen!\n\n[p]jen add <commandname> to add a new command.\n[p]jen set <commandname> <parameter> <value> to set a parameter.\n[p]jen remove <commandname> to remove a command."""
+        
+        def check_permissions(ctx):
+            return ctx.author.guild_permissions.manage_guild or ctx.author.guild_permissions.administrator
+        
+        if command_name.lower() in ["add", "set", "remove", "delete", "list"]:
+            if not check_permissions(ctx):
+                await ctx.send("You do not have the necessary permissions to perform this action.")
+                return
 
-        recipient_user = guild_settings["recipient_user"]
-        if recipient_user:
-            recipient_user = ctx.guild.get_member(recipient_user)
-            recipient_name = recipient_user.display_name if recipient_user else "User not found"
+            if command_name.lower() == "add":
+                if len(args) < 1:
+                    await ctx.reply("Failed, please specify a valid command name.")
+                    return
+                await self.jen_add(ctx, args[0])
+            elif command_name.lower() == "set":
+                if len(args) < 2:
+                    await ctx.reply("Failed, please specify correct arguments.")
+                    return
+                await self.jen_set(ctx, *args)
+            elif command_name.lower() == "remove" or command_name.lower() == "delete":
+                if len(args) < 1:
+                    await ctx.reply("Failed, please specify a valid command name.")
+                    return
+                await self.jen_remove(ctx, args[0])
+            elif command_name.lower() == "list":
+                await self.jen_list(ctx)
+                return
         else:
-            recipient_name = "No recipient set"
-        embed.add_field(name="Recipient User", value=recipient_name, inline=False)
+            await self.dynamic_command_handler(ctx, command_name, *args)
+
+    async def jen_add(self, ctx, command_name: str):
+        """Add a new custom command."""
+        if command_name.lower() in ["add", "set", "remove", "list"]:
+            await ctx.send(f"The command `{command_name}` is a system command.")
+            return
+        async with self.config.guild(ctx.guild).commands() as commands:
+            if command_name in commands:
+                await ctx.send(f"The command `{command_name}` already exists.")
+                return
+            commands[command_name] = {"mode": "dm", "message": "This is a test message."}
+        self.add_dynamic_command(ctx.guild, command_name)
+        await ctx.send(f"Command {command_name} added.")
+
+    async def jen_set(self, ctx, *args):
+        """Set a configuration for a custom command."""
+        valid_settings = ["cost", "user", "percentage", "mode", "embedtitle", "embedtext", "embedpretext", "embedcolour", "embedavatarurl", "privatemessage", "webhookurl", "webhooktext"]
+        if args[1] not in valid_settings:
+            await ctx.send(f"Invalid setting. Valid settings are: {', '.join(valid_settings)}")
+            return
+        
+        args_list = list(args)
+
+        if args_list[1] == "mode":
+            if args_list[2] not in ["webhook", "dm", "embed"]:
+                await ctx.send(f"Valid options for mode are 'webhook', 'dm', 'embed'.")
+                return
+
+        if args_list[1] == "user":
+            try:
+                user_id_match = re.findall(r'\d+', args_list[2])
+                if user_id_match:  
+                    user_id = user_id_match[0]  
+                    args_list[2] = int(user_id) 
+                else:
+                    raise ValueError("Invalid user mention.")
+            except Exception as e:
+                print (e)
+                await ctx.send("Something went wrong; please try again. Make sure you're mentioning a user.")
+                return
+
+        if (args_list[1] == "privatemessage"):
+            args_list[2] = " ".join(args_list[2:])
+            print (args_list[2])
+
+        async with self.config.guild(ctx.guild).commands() as commands:
+            if args_list[0] not in commands:
+                await ctx.send(f"The command `{args_list[0]}` does not exist.")
+                return
+            commands[args_list[0]][args_list[1]] = args_list[2]
+        await ctx.send(f"Configuration for `{args_list[0]} - {args_list[1]}` updated.")
+
+    async def jen_remove(self, ctx, command_name: str):
+        """Remove a custom command."""
+        async with self.config.guild(ctx.guild).commands() as commands:
+            if command_name not in commands:
+                await ctx.send(f"The command `{command_name}` does not exist.")
+                return
+            del commands[command_name]
+        self.remove_dynamic_command(ctx.guild, command_name)
+        await ctx.send(f"Command `{command_name}` removed.")
+
+    async def jen_list(self, ctx):
+        """Lists all custom commands configured for the guild."""
+        commands_config = await self.config.guild(ctx.guild).commands()
+
+        if not commands_config:
+            await ctx.send("No custom commands have been configured.")
+            return
+
+        commands_list = "\n".join([f"`;jen {command_name}`" for command_name in commands_config.keys()])
+
+        embed = discord.Embed(title="Custom Commands List",
+                              description=commands_list,
+                              color=discord.Color.blue())
         await ctx.send(embed=embed)
