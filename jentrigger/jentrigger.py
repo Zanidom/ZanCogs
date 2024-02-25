@@ -136,9 +136,12 @@ class jentrigger(commands.Cog):
         if 'embedavatarurl' in embed_config:
             embed.set_thumbnail(url=embed_config['embedavatarurl'])
             print(embed_config['embedavatarurl'])
-
+        if 'embedpretext' in embed_config:
+            pretext = embed_config['embedpretext']
+        else:
+            pretext = ""
         try:
-            await ctx.channel.send(embed=embed, allowed_mentions=discord.AllowedMentions(everyone=False, roles=True, users=True))
+            await ctx.channel.send(pretext, embed=embed, allowed_mentions=discord.AllowedMentions(everyone=False, roles=True, users=True))
         except discord.HTTPException as e:
             print(f"Failed to send embed message: {e}.")
 
