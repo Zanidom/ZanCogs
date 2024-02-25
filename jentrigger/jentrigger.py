@@ -76,7 +76,7 @@ class jentrigger(commands.Cog):
         command_config = commands_config.get(command_name, {})
 
         cost = command_config.get("cost", 100)
-        percentage = command_config.get("percentage", 100) 
+        percentage = int(command_config.get("percentage", 100)) 
         recipient_id = command_config.get("user", None) 
 
         adjusted_amount = int(cost * (percentage / 100))
@@ -156,7 +156,7 @@ class jentrigger(commands.Cog):
             return
         
         cost = command_config.get('cost', 100)
-        percentage = command_config.get('percentage', 100)
+        percentage = int(command_config.get('percentage', 100))
 
         from functools import partial
         callback_action = partial(self.command_action_callback, command_name=command_name)
@@ -171,7 +171,7 @@ class jentrigger(commands.Cog):
         command_config = commands_config.get(command_name, {})
         if command_config['mode'] == 'dm':
             message = command_config.get('privatemessage', 'Default message')
-            target = command_config.get('user', ctx.author.id)
+            target = command_config.get('privatemessageuser', ctx.author.id)
             await self.action_send_dm(target, message)
         elif command_config['mode'] == 'webhook':
             webhook_url = command_config.get('webhookurl', '')
@@ -185,7 +185,7 @@ class jentrigger(commands.Cog):
 
     @commands.command(name="jen", autohelp=False)
     async def jen(self, ctx, command_name: str, *args):
-        """List of commands for Jen!\n\n[p]jen add <commandname> to add a new command.\n[p]jen set <commandname> <parameter> <value> to set a parameter.\n[p]jen remove <commandname> to remove a command."""
+        """List of commands for Jen!\n\n[p]jen add <commandname> to add a new command.\n[p]jen set <commandname> <parameter> <value> to set a parameter.\n[p]jen remove <commandname> to remove a command.\n[p]jen list shows a list of all commands"""
         
         def check_permissions(ctx):
             return ctx.author.guild_permissions.manage_guild or ctx.author.guild_permissions.administrator
@@ -231,7 +231,7 @@ class jentrigger(commands.Cog):
 
     async def jen_set(self, ctx, *args):
         """Set a configuration for a custom command."""
-        valid_settings = ["cost", "user", "percentage", "mode", "embedtitle", "embedtext", "embedpretext", "embedcolour", "embedcolor", "embedavatarurl", "privatemessage", "webhookurl", "webhooktext"]
+        valid_settings = ["cost", "user", "percentage", "mode", "embedtitle", "embedtext", "embedpretext", "embedcolour", "embedcolor", "embedavatarurl", "privatemessage", "privatemessageuser" "webhookurl", "webhooktext"]
         if args[1] not in valid_settings:
             await ctx.send(f"Invalid setting. Valid settings are: {', '.join(valid_settings)}")
             return
@@ -287,7 +287,7 @@ class jentrigger(commands.Cog):
             await ctx.send("No custom commands have been configured.")
             return
 
-        commands_list = "\n".join([f"`;jen {command_name}`" for command_name in commands_config.keys()])
+        commands_list = "\n".join([f";jen {command_name} - Costs {commands_config[command_name].get('cost', 'Not set')}" for command_name in commands_config.keys()])
 
         embed = discord.Embed(title="Custom Commands List",
                               description=commands_list,
