@@ -329,7 +329,7 @@ class jentrigger(commands.Cog):
                 args_list[2] = '#' + args_list[2].lower()
 
         if (lowered == "privatemessage" or lowered == "embedtext" or lowered == "embedtitle" or lowered == "embedpretext"):
-            args_list[2] = " ".join(args_list[2:])
+            args_list[2] = " ".join(args[2:])
 
         if lowered == "embedavatarurl":
             args_list[2] = args[2]
