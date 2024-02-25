@@ -129,8 +129,9 @@ class jentrigger(commands.Cog):
 
     async def action_post_embed(self, ctx, embed_config):
         """Post an embed in the specified channel based on embed_config."""
-        embed = discord.Embed(description=embed_config.get('embedtext', 'Default text'),
-                              color=discord.Color.from_str(embed_config.get('embedcolour', '#FFFFFF')))
+        embed = discord.Embed(color=discord.Color.from_str(embed_config.get('embedcolour', '#FFFFFF')))
+        if 'embedtext' in embed_config:
+            embed.description = embed_config['embedtext']
         if 'embedtitle' in embed_config:
             embed.title = embed_config['embedtitle']
         if 'embedavatarurl' in embed_config:
@@ -190,7 +191,7 @@ class jentrigger(commands.Cog):
         def check_permissions(ctx):
             return ctx.author.guild_permissions.manage_guild or ctx.author.guild_permissions.administrator
         
-        if command_name.lower() in ["add", "set", "remove", "delete", "list"]:
+        if command_name.lower() in ["add", "set", "clear" "remove", "delete", "list"]:
             if not check_permissions(ctx):
                 await ctx.send("You do not have the necessary permissions to perform this action.")
                 return
@@ -210,6 +211,12 @@ class jentrigger(commands.Cog):
                     await ctx.reply("Failed, please specify a valid command name.")
                     return
                 await self.jen_remove(ctx, args[0])
+            elif command_name.lower() == "clear":
+                if len(args) < 2:
+                    await ctx.reply("Failed, please specify correct arguments.")
+                    return
+                await self.jen_clear(ctx, args[0], args[1])
+                return
             elif command_name.lower() == "list":
                 await self.jen_list(ctx)
                 return
@@ -218,7 +225,7 @@ class jentrigger(commands.Cog):
 
     async def jen_add(self, ctx, command_name: str):
         """Add a new custom command."""
-        if command_name.lower() in ["add", "set", "remove", "list"]:
+        if command_name.lower() in ["add", "set", "clear", "remove", "delete", "list"]:
             await ctx.send(f"The command `{command_name}` is a system command.")
             return
         async with self.config.guild(ctx.guild).commands() as commands:
@@ -275,6 +282,21 @@ class jentrigger(commands.Cog):
             commands[args_list[0]][args_list[1]] = args_list[2]
         await ctx.send(f"Configuration for `{args_list[0]} - {args_list[1]}` updated.")
 
+        
+    async def jen_clear(self, ctx, command_name: str, parameter: str):
+        """Clears a specific parameter for the given command."""
+        async with self.config.guild(ctx.guild).commands() as commands:
+            if command_name not in commands:
+                await ctx.send(f"The command `{command_name}` does not exist.")
+                return
+
+            if parameter not in commands[command_name]:
+                await ctx.send(f"The parameter `{parameter}` does not exist for the command `{command_name}`.")
+                return
+
+            del commands[command_name][parameter]
+            await ctx.send(f"The parameter `{parameter}` for the command `{command_name}` has been cleared.")
+
     async def jen_remove(self, ctx, command_name: str):
         """Remove a custom command."""
         async with self.config.guild(ctx.guild).commands() as commands:
@@ -293,7 +315,7 @@ class jentrigger(commands.Cog):
             await ctx.send("No custom commands have been configured.")
             return
 
-        commands_list = "\n".join([f";jen {command_name} - Costs {commands_config[command_name].get('cost', 'Not set')}" for command_name in commands_config.keys()])
+        commands_list = "\n".join([f";jen {command_name} - Costs {commands_config[command_name].get('cost', '100')}" for command_name in commands_config.keys()])
 
         embed = discord.Embed(title="Custom Commands List",
                               description=commands_list,
