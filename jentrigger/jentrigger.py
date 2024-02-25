@@ -231,7 +231,7 @@ class jentrigger(commands.Cog):
 
     async def jen_set(self, ctx, *args):
         """Set a configuration for a custom command."""
-        if len(args) < 2:
+        if len(args) < 3:
             await ctx.send(f"Not enough arguments supplied.")
             return
         
