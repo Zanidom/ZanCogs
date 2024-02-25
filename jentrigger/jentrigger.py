@@ -211,7 +211,7 @@ class jentrigger(commands.Cog):
                 await self.jen_list(ctx)
                 return
         else:
-            await self.dynamic_command_handler(ctx, command_name, *args)
+            await self.dynamic_command_handler(ctx, command_name)
 
     async def jen_add(self, ctx, command_name: str):
         """Add a new custom command."""
