@@ -100,7 +100,6 @@ class jentrigger(commands.Cog):
         url = command_config.get('webhookurl', 'unconfigured')
         data_template = command_config.get('webhooktext', 'Default webhook message')
         
-        # Replace placeholders in the data template
         data = data_template.replace("$USERNAME$", ctx.author.name)
         
         if url == "unconfigured":
@@ -126,6 +125,28 @@ class jentrigger(commands.Cog):
             await target.send(message)
         except Exception as e:
             print(f"Failed to send DM to {user} - {e}")
+
+    async def action_send_dmembed(self, ctx, embed_config):
+        """Send a DM embed to the specified user with the given message."""
+        targetid = embed_config.get('privatemessageuser', ctx.author.id)
+        embed = discord.Embed(color=discord.Color.from_str(embed_config.get('embedcolour', '#FFFFFF')))
+        if 'embedtext' in embed_config:
+            embed.description = embed_config['embedtext']
+        if 'embedtitle' in embed_config:
+            embed.title = embed_config['embedtitle']
+        if 'embedavatarurl' in embed_config:
+            embed.set_thumbnail(url=embed_config['embedavatarurl'])
+            print(embed_config['embedavatarurl'])
+        if 'embedpretext' in embed_config:
+            pretext = embed_config['embedpretext']
+        else:
+            pretext = ""
+            
+        target = self.bot.get_user(targetid)
+        try:
+            await target.send(pretext, embed=embed, allowed_mentions=discord.AllowedMentions(everyone=False, roles=True, users=True))
+        except Exception as e:
+            print(f"Failed to send DM to {target} - {e}")
 
     async def action_post_embed(self, ctx, embed_config):
         """Post an embed in the specified channel based on embed_config."""
@@ -174,15 +195,38 @@ class jentrigger(commands.Cog):
             message = command_config.get('privatemessage', 'Default message')
             target = command_config.get('privatemessageuser', ctx.author.id)
             await self.action_send_dm(target, message)
+            return
         elif command_config['mode'] == 'webhook':
             webhook_url = command_config.get('webhookurl', '')
             if webhook_url:
                 await self.action_post_webhook(ctx, command_name)
             else:
                 raise Exception("Command set to webhook but no URL configured.")
+            return
         elif command_config['mode'] == 'embed':
             await self.action_post_embed(ctx, command_config)
-
+            return
+        elif command_config['mode'] == 'dmembed':
+            await self.action_send_dmembed(ctx, command_config)
+            return
+        elif command_config['mode'] == 'dm+embed':
+            message = command_config.get('privatemessage', 'Default message')
+            target = command_config.get('privatemessageuser', ctx.author.id)
+            await self.action_send_dm(target, message)
+            await self.action_post_embed(ctx, command_config)
+            return
+        elif command_config['mode'] == 'dmembed+embed':
+            await self.action_send_dmembed(ctx, command_config)
+            await self.action_post_embed(ctx, command_config)
+            return
+        elif command_config['mode'] == 'webhook+embed':
+            webhook_url = command_config.get('webhookurl', '')
+            if webhook_url:
+                await self.action_post_webhook(ctx, command_name)
+            else:
+                raise Exception("Command set to webhook but no URL configured.")
+            await self.action_post_embed(ctx, command_config)
+            return
 
     @commands.command(name="jen", autohelp=False)
     async def jen(self, ctx, command_name: str, *args):
@@ -243,18 +287,20 @@ class jentrigger(commands.Cog):
             return
         
         valid_settings = ["cost", "user", "percentage", "mode", "embedtitle", "embedtext", "embedpretext", "embedcolour", "embedcolor", "embedavatarurl", "privatemessage", "privatemessageuser" "webhookurl", "webhooktext"]
-        if args[1] not in valid_settings:
+        if args[1].lower() not in valid_settings:
             await ctx.send(f"Invalid setting. Valid settings are: {', '.join(valid_settings)}")
             return
         
         args_list = list(args)
 
-        if args_list[1] == "mode":
-            if args_list[2] not in ["webhook", "dm", "embed"]:
-                await ctx.send(f"Valid options for mode are 'webhook', 'dm', 'embed'.")
+        lowered = args_list[1].lower()
+
+        if lowered == "mode":
+            if args_list[2].lower() not in ['webhook', 'dm', 'embed', 'dmembed', 'dm+embed', 'dmembed+embed', 'webhook+embed']:
+                await ctx.send(f"Valid options for mode are 'webhook', 'dm', 'embed', 'dmembed', 'dm+embed', 'dmembed+embed', 'webhook+embed'.")
                 return
 
-        if args_list[1] == "user":
+        if lowered == "user":
             try:
                 user_id_match = re.findall(r'\d+', args_list[2])
                 if user_id_match:  
@@ -267,19 +313,21 @@ class jentrigger(commands.Cog):
                 await ctx.send("Something went wrong; please try again. Make sure you're mentioning a user.")
                 return
 
-        if args_list[1] == "embedcolor":
+        if lowered == "embedcolor":
             args_list[1] = "embedcolour"
+        
+        if args_list[1].lower() == "embedcolour":
             if args_list[2][0] != '#':
-                args_list[2] = '#' + args_list[2]
+                args_list[2] = '#' + args_list[2].lower()
 
-        if (args_list[1] == "privatemessage" or args_list[1] == "embedtext" or args_list[1] == "embedtitle" or args_list[1] == "embedpretext"):
+        if (lowered == "privatemessage" or lowered == "embedtext" or lowered == "embedtitle" or lowered == "embedpretext"):
             args_list[2] = " ".join(args_list[2:])
 
         async with self.config.guild(ctx.guild).commands() as commands:
             if args_list[0] not in commands:
                 await ctx.send(f"The command `{args_list[0]}` does not exist.")
                 return
-            commands[args_list[0]][args_list[1]] = args_list[2]
+            commands[args_list[0]][args_list[1].lower()] = args_list[2].lower()
         await ctx.send(f"Configuration for `{args_list[0]} - {args_list[1]}` updated.")
 
         
