@@ -240,7 +240,7 @@ class jentrigger(commands.Cog):
         def check_permissions(ctx):
             return ctx.author.guild_permissions.manage_guild or ctx.author.guild_permissions.administrator
         
-        if command_name.lower() in ["add", "set", "clear", "remove", "delete", "list"]:
+        if command_name.lower() in ["add", "set", "clear", "remove", "delete", "list", "show", "view"]:
             if not check_permissions(ctx):
                 await ctx.send("You do not have the necessary permissions to perform this action.")
                 return
@@ -269,12 +269,15 @@ class jentrigger(commands.Cog):
             elif command_name.lower() == "list":
                 await self.jen_list(ctx)
                 return
+            elif command_name.lower() == "view" or command_name.lower() == "show":
+                await self.jen_show(ctx, args[0])
+                return
         else:
             await self.dynamic_command_handler(ctx, command_name)
 
     async def jen_add(self, ctx, command_name: str):
         """Add a new custom command."""
-        if command_name.lower() in ["add", "set", "clear", "remove", "delete", "list"]:
+        if command_name.lower() in ["add", "set", "clear", "show", "view", "remove", "delete", "list"]:
             await ctx.send(f"The command `{command_name}` is a system command.")
             return
         async with self.config.guild(ctx.guild).commands() as commands:
@@ -328,6 +331,9 @@ class jentrigger(commands.Cog):
         if (lowered == "privatemessage" or lowered == "embedtext" or lowered == "embedtitle" or lowered == "embedpretext"):
             args_list[2] = " ".join(args_list[2:])
 
+        if lowered == "embedavatarurl":
+            args_list[2] = args[2]
+
         async with self.config.guild(ctx.guild).commands() as commands:
             if args_list[0] not in commands:
                 await ctx.send(f"The command `{args_list[0]}` does not exist.")
@@ -372,5 +378,28 @@ class jentrigger(commands.Cog):
 
         embed = discord.Embed(title="Custom Commands List",
                               description=commands_list,
+                              color=discord.Color.blue())
+        await ctx.send(embed=embed)
+
+        
+    async def jen_show(self, ctx, command_name: str):
+        """Shows all configuration keys and values for the given command."""
+        commands_config = await self.config.guild(ctx.guild).commands()
+        
+        if command_name not in commands_config:
+            await ctx.send(f"The command `{command_name}` does not exist.")
+            return
+
+        command_config = commands_config[command_name]
+
+        config_lines = [f"`{key}`: {value}" for key, value in command_config.items()]
+        config_message = "\n".join(config_lines)
+
+        if len(config_message) > 2000:
+            await ctx.send("The command's configuration is too long to display in one message.")
+            return
+
+        embed = discord.Embed(title=f"Configuration for `{command_name}`",
+                              description=config_message,
                               color=discord.Color.blue())
         await ctx.send(embed=embed)
