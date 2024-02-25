@@ -294,13 +294,13 @@ class jentrigger(commands.Cog):
         args_list = list(args)
 
         lowered = args_list[1].lower()
-
+        args_list[2] = args_list[2].lower()
         if lowered == "mode":
             if args_list[2].lower() not in ['webhook', 'dm', 'embed', 'dmembed', 'dm+embed', 'dmembed+embed', 'webhook+embed']:
                 await ctx.send(f"Valid options for mode are 'webhook', 'dm', 'embed', 'dmembed', 'dm+embed', 'dmembed+embed', 'webhook+embed'.")
                 return
 
-        if lowered == "user":
+        if lowered == "user" or lowered == "privatemessageuser":
             try:
                 user_id_match = re.findall(r'\d+', args_list[2])
                 if user_id_match:  
@@ -327,7 +327,7 @@ class jentrigger(commands.Cog):
             if args_list[0] not in commands:
                 await ctx.send(f"The command `{args_list[0]}` does not exist.")
                 return
-            commands[args_list[0]][args_list[1].lower()] = args_list[2].lower()
+            commands[args_list[0]][args_list[1].lower()] = args_list[2]
         await ctx.send(f"Configuration for `{args_list[0]} - {args_list[1]}` updated.")
 
         
