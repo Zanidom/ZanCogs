@@ -186,7 +186,7 @@ class jentrigger(commands.Cog):
 
     @commands.command(name="jen", autohelp=False)
     async def jen(self, ctx, command_name: str, *args):
-        """List of commands for Jen!\n\n[p]jen add <commandname> to add a new command.\n[p]jen set <commandname> <parameter> <value> to set a parameter.\n[p]jen remove <commandname> to remove a command.\n[p]jen list shows a list of all commands"""
+        """List of commands for Jen!\n\n[p]jen add <commandname> to add a new command.\n[p]jen set <commandname> <parameter> <value> to set a parameter.\n[p]jen remove <commandname> to remove a command.\n[p]jen clear <commandname> <parameter> clears a parameter for a command.\n[p]jen list shows a list of all commands"""
         
         def check_permissions(ctx):
             return ctx.author.guild_permissions.manage_guild or ctx.author.guild_permissions.administrator
