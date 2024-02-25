@@ -130,7 +130,7 @@ class jentrigger(commands.Cog):
     async def action_post_embed(self, ctx, embed_config):
         """Post an embed in the specified channel based on embed_config."""
         embed = discord.Embed(description=embed_config.get('embedtext', 'Default text'),
-                              color=discord.Color.from_str(embed_config.get('color', '#FFFFFF')))
+                              color=discord.Color.from_str(embed_config.get('embedcolour', '#FFFFFF')))
         if 'embedtitle' in embed_config:
             embed.title = embed_config['embedtitle']
         if 'embedavatarurl' in embed_config:
@@ -228,7 +228,7 @@ class jentrigger(commands.Cog):
 
     async def jen_set(self, ctx, *args):
         """Set a configuration for a custom command."""
-        valid_settings = ["cost", "user", "percentage", "mode", "embedtitle", "embedtext", "embedpretext", "embedcolour", "embedavatarurl", "privatemessage", "webhookurl", "webhooktext"]
+        valid_settings = ["cost", "user", "percentage", "mode", "embedtitle", "embedtext", "embedpretext", "embedcolour", "embedcolor", "embedavatarurl", "privatemessage", "webhookurl", "webhooktext"]
         if args[1] not in valid_settings:
             await ctx.send(f"Invalid setting. Valid settings are: {', '.join(valid_settings)}")
             return
@@ -252,6 +252,9 @@ class jentrigger(commands.Cog):
                 print (e)
                 await ctx.send("Something went wrong; please try again. Make sure you're mentioning a user.")
                 return
+
+        if args_list[1] == "embedcolor":
+            args_list[1] = "embedcolour"
 
         if (args_list[1] == "privatemessage" or args_list[1] == "embedtext" or args_list[1] == "embedtitle"):
             args_list[2] = " ".join(args_list[2:])
