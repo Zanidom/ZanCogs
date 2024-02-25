@@ -75,7 +75,7 @@ class jentrigger(commands.Cog):
         commands_config = await self.config.guild(ctx.guild).commands()
         command_config = commands_config.get(command_name, {})
 
-        cost = command_config.get("cost", 100)
+        cost = int(command_config.get("cost", 100))
         percentage = int(command_config.get("percentage", 100)) 
         recipient_id = command_config.get("user", None) 
 
@@ -231,6 +231,10 @@ class jentrigger(commands.Cog):
 
     async def jen_set(self, ctx, *args):
         """Set a configuration for a custom command."""
+        if len(args) < 2:
+            await ctx.send(f"Not enough arguments supplied.")
+            return
+        
         valid_settings = ["cost", "user", "percentage", "mode", "embedtitle", "embedtext", "embedpretext", "embedcolour", "embedcolor", "embedavatarurl", "privatemessage", "privatemessageuser" "webhookurl", "webhooktext"]
         if args[1] not in valid_settings:
             await ctx.send(f"Invalid setting. Valid settings are: {', '.join(valid_settings)}")
@@ -258,6 +262,8 @@ class jentrigger(commands.Cog):
 
         if args_list[1] == "embedcolor":
             args_list[1] = "embedcolour"
+            if args_list[2][0] != '#':
+                args_list[2] = '#' + args_list[2]
 
         if (args_list[1] == "privatemessage" or args_list[1] == "embedtext" or args_list[1] == "embedtitle" or args_list[1] == "embedpretext"):
             args_list[2] = " ".join(args_list[2:])
