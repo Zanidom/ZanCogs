@@ -138,7 +138,7 @@ class jentrigger(commands.Cog):
             print(embed_config['embedavatarurl'])
 
         try:
-            await ctx.channel.send(embed=embed)
+            await ctx.channel.send(embed=embed, allowed_mentions=discord.AllowedMentions(everyone=False, roles=True, users=True))
         except discord.HTTPException as e:
             print(f"Failed to send embed message: {e}.")
 
