@@ -286,7 +286,7 @@ class jentrigger(commands.Cog):
             await ctx.send(f"Not enough arguments supplied.")
             return
         
-        valid_settings = ["cost", "user", "percentage", "mode", "embedtitle", "embedtext", "embedpretext", "embedcolour", "embedcolor", "embedavatarurl", "privatemessage", "privatemessageuser" "webhookurl", "webhooktext"]
+        valid_settings = ["cost", "user", "percentage", "mode", "embedtitle", "embedtext", "embedpretext", "embedcolour", "embedcolor", "embedavatarurl", "privatemessage", "privatemessageuser", "webhookurl", "webhooktext"]
         if args[1].lower() not in valid_settings:
             await ctx.send(f"Invalid setting. Valid settings are: {', '.join(valid_settings)}")
             return
