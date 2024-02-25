@@ -155,14 +155,14 @@ class jentrigger(commands.Cog):
             await ctx.send("This command is not configured.")
             return
         
-        cost = command_config.get('cost', 100)
+        cost = int(command_config.get('cost', 100))
         percentage = int(command_config.get('percentage', 100))
 
         from functools import partial
         callback_action = partial(self.command_action_callback, command_name=command_name)
 
         view = ConfirmationView(ctx=ctx, cost=cost, cog=self, callback=callback_action, command_name=command_name)
-        embed = Embed(title="Confirmation", description=f"This will cost {cost}.\n{int(cost * (percentage / 100))} goes to Jen and {int(cost - cost *(percentage / 100))} will be vanished into the ether.\n\nAre you sure?", color=discord.Color.blue())
+        embed = Embed(title="Confirmation", description=f"This will cost {cost}.\n{int(cost * int(percentage / 100))} goes to Jen and {int(cost - cost * int(percentage / 100))} will be vanished into the ether.\n\nAre you sure?", color=discord.Color.blue())
         
         await ctx.send("Please confirm this action:", embed=embed, view=view)
     
