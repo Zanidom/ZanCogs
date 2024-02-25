@@ -259,7 +259,7 @@ class jentrigger(commands.Cog):
         if args_list[1] == "embedcolor":
             args_list[1] = "embedcolour"
 
-        if (args_list[1] == "privatemessage" or args_list[1] == "embedtext" or args_list[1] == "embedtitle"):
+        if (args_list[1] == "privatemessage" or args_list[1] == "embedtext" or args_list[1] == "embedtitle" or args_list[1] == "embedpretext"):
             args_list[2] = " ".join(args_list[2:])
 
         async with self.config.guild(ctx.guild).commands() as commands:
