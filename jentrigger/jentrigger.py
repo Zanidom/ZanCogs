@@ -173,6 +173,10 @@ class jentrigger(commands.Cog):
         commands_config = await self.config.guild(ctx.guild).commands()
         command_config = commands_config.get(command_name)
 
+        if command_config is None:
+            await ctx.send("This command is not configured.")
+            return
+
         cost = int(command_config.get('cost', 100))
         percentage = int(command_config.get('percentage', 100))
 
@@ -181,9 +185,6 @@ class jentrigger(commands.Cog):
             etherString = f"{int(cost * (percentage / 100))} goes to {userName} and {int(cost - cost *(percentage / 100))} will be vanished into the ether."
         else:
             etherString = f"All {int(cost)} will be vanished into the ether."
-        if not command_config:
-            await ctx.send("This command is not configured.")
-            return
         
         from functools import partial
         callback_action = partial(self.command_action_callback, command_name=command_name)
@@ -235,12 +236,17 @@ class jentrigger(commands.Cog):
 
     @commands.command(name="jen", autohelp=False)
     async def jen(self, ctx, command_name: str, *args):
-        """List of commands for Jen!\n\n[p]jen add <commandname> to add a new command.\n[p]jen set <commandname> <parameter> <value> to set a parameter.\n[p]jen remove <commandname> to remove a command.\n[p]jen clear <commandname> <parameter> clears a parameter for a command.\n[p]jen list shows a list of all commands"""
+        """List of commands for Jen!\n\n
+        <Admin> [p]jen add <commandname> to add a new command.\n<Admin> [p]jen set <commandname> <parameter> <value> to set a parameter.\n<Admin> [p]jen remove <commandname> to remove a command.\n<Admin> [p]jen show <commandname> shows the config for a given command.\n<Admin> [p]jen clear <commandname> <parameter> clears a parameter for a command.\n\n[p]jen list shows a list of all commands with their cost.\n"""
         
+        if command_name.lower() == "help":
+            await ctx.send_help("jen")
+            return
+
         def check_permissions(ctx):
             return ctx.author.guild_permissions.manage_guild or ctx.author.guild_permissions.administrator
         
-        if command_name.lower() in ["add", "set", "clear", "remove", "delete", "list", "show", "view"]:
+        if command_name.lower() in ["add", "set", "clear", "remove", "delete", "show", "view"]:
             if not check_permissions(ctx):
                 await ctx.send("You do not have the necessary permissions to perform this action.")
                 return
@@ -266,12 +272,12 @@ class jentrigger(commands.Cog):
                     return
                 await self.jen_clear(ctx, args[0], args[1])
                 return
-            elif command_name.lower() == "list":
-                await self.jen_list(ctx)
-                return
             elif command_name.lower() == "view" or command_name.lower() == "show":
                 await self.jen_show(ctx, args[0])
                 return
+        elif command_name.lower() == "list":
+            await self.jen_list(ctx)
+            return
         else:
             await self.dynamic_command_handler(ctx, command_name)
 
