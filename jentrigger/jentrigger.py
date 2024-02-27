@@ -84,11 +84,9 @@ class jentrigger(commands.Cog):
         percentage = int(command_config.get("percentage", 100)) 
         recipient_id = command_config.get("user", None) 
 
+        await bank.withdraw_credits(ctx.author, cost)
         adjusted_amount = int(cost * (percentage / 100))
 
-        await bank.withdraw_credits(ctx.author, adjusted_amount)
-
-        # If a recipient is specified, transfer the adjusted amount to them
         if recipient_id is not None:
             recipient = ctx.guild.get_member(recipient_id)
             if recipient:
