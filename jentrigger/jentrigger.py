@@ -16,11 +16,16 @@ class ConfirmationView(discord.ui.View):
         self.cog = cog
         self.callback = callback  # Store the callback function
         self.command_name = command_name
+        self.hasTriggered = False
 
     @discord.ui.button(label="Confirm", style=ButtonStyle.success, emoji="✅")
     async def confirm(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user != self.ctx.author:
             return await interaction.response.send_message("You cannot confirm this action.", ephemeral=True)
+        if self.hasTriggered:
+            await interaction.response.defer()
+            return
+        self.hasTriggered = True
         try:
             if asyncio.iscoroutinefunction(self.callback):
                 await self.callback(self.ctx)
