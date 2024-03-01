@@ -81,9 +81,9 @@ class Markov(commands.Cog):
         pass
 
     @markov.command()
-    async def generate(self, ctx: commands.Context, user: discord.abc.User = None):
+    async def generate(self, ctx: commands.Context, user: discord.Member = None):
         """ Generate text based on user language models """
-        if not isinstance(user, discord.abc.User):
+        if not isinstance(user, discord.Member):
             user = ctx.message.author
         enabled, chains, depth, mode = await self.get_user_config(user)
         if not enabled:
