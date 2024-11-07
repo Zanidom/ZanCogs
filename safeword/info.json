@@ -1,7 +1,7 @@
 {
   "author": ["Zan" ],
   "name": "Safeword",
-  "max_bot_version": "3.5.4",
+  "max_bot_version": "3.6.0",
   "min_bot_version": "3.5.0",
   "description": "A cog that lets you create Safewords that trigger a response.",
   "short": "Safewords",
