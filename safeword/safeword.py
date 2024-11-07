@@ -1,6 +1,7 @@
 import discord
 from enum import Enum
 from redbot.core import commands, app_commands, Config, checks
+import asyncio
 
 #class Response(Enum):
 #    PING_ADMINS = 1
@@ -87,6 +88,9 @@ from redbot.core import commands, app_commands, Config, checks
 class Safeword (commands.Cog):
     def __init__ (self, bot):
         self.bot = bot
+        self.config = Config.get_conf(self, identifier=1234567890)
+        default_channel = {"slowmode_duration": 300}
+        self.config.register_channel(**default_channel)
     
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -94,3 +98,39 @@ class Safeword (commands.Cog):
             adminRole = discord.utils.get(message.guild.roles, name="Admin")
             if adminRole is not None:
                 await message.reply(f"<@&{adminRole.id}>", allowed_mentions=discord.AllowedMentions(everyone=False, roles=True, users=False))
+            
+            slowmode_duration = await self.config.channel(message.channel).slowmode_duration()
+            # Set the slowmode if the bot has permissions
+            if message.channel.permissions_for(message.guild.me).manage_channels:
+                await message.channel.edit(slowmode_delay=slowmode_duration)
+                self.bot.loop.create_task(self.reset_slowmode(message.channel))
+
+    async def reset_slowmode(self, channel):
+        slowmode_duration = await self.config.channel(channel).slowmode_duration()
+        await asyncio.sleep(slowmode_duration)
+        await channel.edit(slowmode_delay=0)
+
+    @commands.group()
+    @commands.guild_only()
+    async def safeword(self, ctx):
+        """Commands related to safeword functionality."""
+        pass
+
+    @safeword.command()
+    @commands.has_permissions(manage_channels=True)
+    async def slowmode(self, ctx, seconds: int, channel: discord.TextChannel = None):
+        """
+        Set the safeword slowmode duration for a channel.
+
+        Usage: [p]safeword slowmode <seconds> [channel]
+        If channel is not specified, the current channel is used.
+        """
+        if channel is None:
+            channel = ctx.channel
+        if seconds < 0:
+            await ctx.send("The slowmode duration must be a non-negative integer.")
+            return
+        await self.config.channel(channel).slowmode_duration.set(seconds)
+        await ctx.send(f"Safeword slowmode duration for {channel.mention} set to {seconds} seconds.")
+
+
