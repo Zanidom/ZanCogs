@@ -155,7 +155,6 @@ class ReactTickets(commands.Cog):
         """Various ReactTickets settings."""
 
     @ticketset.command(name="setmsg")
-    @checks.admin_or_permissions(manage_guild=True)
     async def set_case_message(self, ctx, case_identifier: str, *, message: str):
         """Set a custom message for a support case type using an emoji or title."""
         cases = await self.config.guild(ctx.guild).cases.get_raw()
@@ -168,7 +167,6 @@ class ReactTickets(commands.Cog):
             await ctx.send("No such case type found. Please provide a valid emoji or title.")
 
     @ticketset.command(name="delmsg")
-    @checks.admin_or_permissions(manage_guild=True)
     async def delete_case_message(self, ctx, case_identifier: str):
         """Delete the custom message for a support case type using an emoji or title."""
         cases = await self.config.guild(ctx.guild).cases.get_raw()
@@ -451,17 +449,27 @@ class ReactTickets(commands.Cog):
                 "This will delete **all** closed tickets. This action **cannot** be undone.\n"
                 f"If you're sure, type `{ctx.clean_prefix}ticketset purge yes`."
             )
+
         async with self.config.guild(ctx.guild).closed() as closed:
-            for index, channel in enumerate(closed):
-                try:
-                    channel_obj = ctx.guild.get_channel(channel)
-                    if channel_obj:
+            for channel_id in closed[:]:  # Create a copy to safely modify the list
+                channel_obj = ctx.guild.get_channel(channel_id)
+                if channel_obj:
+                    try:
                         await channel_obj.delete(reason="Ticket purge")
-                    closed.remove(channel)
-                except discord.NotFound:
-                    closed.remove(channel)
-                except discord.HTTPException:
-                    return await ctx.send("Something went wrong. Aborting.")
+                    except discord.NotFound:
+                        pass
+                    except discord.HTTPException as e:
+                        if e.status == 429:
+                            retry_after = e.retry_after
+                            await asyncio.sleep(retry_after)
+                            try:
+                                await channel_obj.delete(reason="Ticket purge")
+                            except discord.HTTPException:
+                                return await ctx.send("Something went wrong handling the rate limit in the purge process; aborting.")
+                        else:
+                            return await ctx.send("Something went wrong with the Discord API (network usually?) - Aborting.")
+                closed.remove(channel_id)
+            await ctx.send("All closed tickets have been purged.")
 
     @commands.command()
     @commands.guild_only()
