@@ -155,6 +155,33 @@ class ReactTickets(commands.Cog):
     async def ticketset(self, ctx: commands.Context):
         """Various ReactTickets settings."""
 
+    @ticketset.command(name="setmsg")
+    @checks.admin_or_permissions(manage_guild=True)
+    async def set_case_message(self, ctx, case_identifier: str, *, message: str):
+        """Set a custom message for a support case type using an emoji or title."""
+        cases = await self.config.guild(ctx.guild).cases.get_raw()
+        resolved_emoji = self.resolve_case_key(case_identifier, cases)
+        if resolved_emoji:
+            async with self.config.guild(ctx.guild).category_messages() as category_messages:
+                category_messages[resolved_emoji] = message
+            await ctx.send(f"Custom message for {resolved_emoji} set.")
+        else:
+            await ctx.send("No such case type found. Please provide a valid emoji or title.")
+
+    @ticketset.command(name="delmsg")
+    @checks.admin_or_permissions(manage_guild=True)
+    async def delete_case_message(self, ctx, case_identifier: str):
+        """Delete the custom message for a support case type using an emoji or title."""
+        cases = await self.config.guild(ctx.guild).cases.get_raw()
+        resolved_emoji = self.resolve_case_key(case_identifier, cases)
+        if resolved_emoji and resolved_emoji in await self.config.guild(ctx.guild).category_messages():
+            async with self.config.guild(ctx.guild).category_messages() as category_messages:
+                del category_messages[resolved_emoji]
+            await ctx.send(f"Custom message for {resolved_emoji} deleted.")
+        else:
+            await ctx.send("No custom message set for this case type or invalid case identifier.")
+
+
     @ticketset.command(name="channel")
     async def ticketset_channel(
         self, ctx: commands.Context, channel: discord.TextChannel
@@ -541,6 +568,11 @@ class ReactTickets(commands.Cog):
                 nsfw=nsfwYN,
             )
 
+            custom_message = await self.config.guild(guild).category_messages.get_raw(str(emoji), default="")
+            user_message = f"{user.mention}, a staff member will be with you shortly."
+            if custom_message:
+                user_message += f"\n\n{custom_message}"
+
             embed = discord.Embed(
                 title=reason,
                 description="To close this ticket, react with 🔒 below.",
@@ -549,7 +581,7 @@ class ReactTickets(commands.Cog):
             embed.set_thumbnail(url=user.avatar)
             embed.set_footer(text=f"{user.name}#{user.discriminator} ({user.id})")
             embed_user_message = await user_channel.send(
-                content=f"{user.mention}, a staff member will be with you shortly.",
+                content=f"{user_message}",
                 embed=embed,
             )
             await self._add_reactions(embed_user_message, ["🔒", "✋"])
@@ -661,3 +693,9 @@ class ReactTickets(commands.Cog):
 
     def _get_emoji_list(self, cases):
         return [emoji for emoji in cases]
+    
+    def _resolve_case_key(self, input, cases):
+        for emoji, details in cases.items():
+            if input == emoji or input.lower() == details['title'].lower():
+                return emoji
+        return None
