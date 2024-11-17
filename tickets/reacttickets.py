@@ -35,8 +35,9 @@ class ReactTickets(commands.Cog):
             active_channels=[],
             active_users=[],
             active_msgs=[],
-            closed=[],  # [channel_id, channel_id]
-            cases={},  # {'emoji': {'title': 'title here', 'desc': 'description here'}}
+            closed=[], 
+            cases={}, 
+            category_messages={},
         )
         
     @commands.Cog.listener()
@@ -57,8 +58,6 @@ class ReactTickets(commands.Cog):
                             pass
                         except discord.Forbidden:
                             print("Permission error while trying to delete old react ticket message.")
-                    
-                    # Create a new message here (assuming there's a method called `create_react_ticket_message`)
                     await self.create_react_ticket_message(guild)
 
 
@@ -160,7 +159,7 @@ class ReactTickets(commands.Cog):
     async def set_case_message(self, ctx, case_identifier: str, *, message: str):
         """Set a custom message for a support case type using an emoji or title."""
         cases = await self.config.guild(ctx.guild).cases.get_raw()
-        resolved_emoji = self.resolve_case_key(case_identifier, cases)
+        resolved_emoji = self._resolve_case_key(case_identifier, cases)
         if resolved_emoji:
             async with self.config.guild(ctx.guild).category_messages() as category_messages:
                 category_messages[resolved_emoji] = message
@@ -173,7 +172,7 @@ class ReactTickets(commands.Cog):
     async def delete_case_message(self, ctx, case_identifier: str):
         """Delete the custom message for a support case type using an emoji or title."""
         cases = await self.config.guild(ctx.guild).cases.get_raw()
-        resolved_emoji = self.resolve_case_key(case_identifier, cases)
+        resolved_emoji = self._resolve_case_key(case_identifier, cases)
         if resolved_emoji and resolved_emoji in await self.config.guild(ctx.guild).category_messages():
             async with self.config.guild(ctx.guild).category_messages() as category_messages:
                 del category_messages[resolved_emoji]
