@@ -203,8 +203,8 @@ class ToDButton(discord.ui.Button):
                 
                 if geResult == True:
                     print("Outcome 1")
-                    await interaction.followup.send(f"{curName} left. Not enough players left, game ending.")
                     await self.gameView.MakeInert()
+                    await interaction.followup.send(f"{curName} left. Not enough players left, game ending.")
                     await ToDCog.TryEndGame(interaction.channel)
                     return
                 else:
@@ -536,7 +536,7 @@ class ToDView(discord.ui.View):
         embedContent = self.GetEmbedContent()
         if embedContent is not None:
             self.embed = embedContent
-            
+
         gameEnding = ToDCog.GetGameState(self.channel) == GameState.GAME_ENDING
 
         if ToDCog.GetIsNewRound(self.channel) or gameEnding:
@@ -555,9 +555,10 @@ class ToDView(discord.ui.View):
                 self.embed.insert_field_at(0, name="Scores so far:", value=scoreList, inline=False)
             await ToDCog.TryClearIsNewRound(self.channel)
 
-        #Join and leave are on all ToDViews that we print so that players have the agency to join and leave as they wish.
-        self.add_item(ToDButton(self.channel,buttonType=ButtonType.JoinButton))
-        self.add_item(ToDButton(self.channel,buttonType=ButtonType.LeaveButton))
+        #Join and leave are on all ToDViews other than the final scoreview that we print so that players have the agency to join and leave as they wish.
+        if not gameEnding:
+            self.add_item(ToDButton(self.channel,buttonType=ButtonType.JoinButton))
+            self.add_item(ToDButton(self.channel,buttonType=ButtonType.LeaveButton))
 
         mode = ToDCog.GetGameMode(self.channel)
         state = ToDCog.GetGameState(self.channel)
@@ -742,6 +743,8 @@ class ToDGame:
         else:
             await self.gameView.MakeInert()
         await self.gameView.CreateView()
+        await self.gameView.StartView(self.channel)
+        await self.gameView.MakeInert()
 
     async def RoundStarting(self):
         print('RoundStarting')
