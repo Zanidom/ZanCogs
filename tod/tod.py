@@ -537,7 +537,7 @@ class ToDView(discord.ui.View):
         if embedContent is not None:
             self.embed = embedContent
         
-        if ToDCog.GetIsNewRound(self.channel):
+        if ToDCog.GetIsNewRound(self.channel) or ToDCog.GetGameState(self.channel) == GameState.GAME_ENDING:
             self.scores = copy(ToDCog.GetScores(self.channel))
             
             #sort dict. not pretty but hey
@@ -739,6 +739,7 @@ class ToDGame:
             await self.gameView.on_timeout()
         else:
             await self.gameView.MakeInert()
+        await self.gameView.CreateView()
 
     async def RoundStarting(self):
         print('RoundStarting')
@@ -894,6 +895,7 @@ class ToDGame:
 
     async def OnStateChange(self):
         print('OnStateChange')
+        self.skip_votes.clear()
         match self.state:
             case GameState.ROUND_STARTING:
                 await self.RoundStarting()
@@ -963,13 +965,17 @@ class ToDCog(commands.Cog):
             return None
 
     @classmethod
-    def GetScores(self,channel:discord.TextChannel):
+    def GetScores(self,channel:discord.TextChannel, includeNotPlaying: bool = False):
         print('GetScores')
         try:
-            player_ids = [player.id for player in self.games[channel.id].players]
             truthscores = self.games[channel.id].truthscores
             darescores = self.games[channel.id].darescores
-            scores = {k: truthscores.get(k, 0) + darescores.get(k, 0) 
+            if includeNotPlaying:
+                scores = {k: truthscores.get(k, 0) + darescores.get(k, 0) 
+                      for k in set(truthscores) | set(darescores)}
+            else:
+                player_ids = [player.id for player in self.games[channel.id].players]
+                scores = {k: truthscores.get(k, 0) + darescores.get(k, 0) 
                       for k in set(truthscores) | set(darescores)
                       if k in player_ids} 
             return scores
