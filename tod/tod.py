@@ -834,7 +834,8 @@ class ToDGame:
                         self.darescores[self.current_player.id] = 2
             self.recentOutcome = False
         if (self.game_mode == GameMode.GameMode_Round):
-            self.selection_list.remove(self.current_player)
+            if (self.current_player in self.selection_list):
+                self.selection_list.remove(self.current_player)
             if len (self.selection_list) == 0:
                 self.state = GameState.ROUND_STARTING
                 self.isNewRound = True
@@ -886,7 +887,6 @@ class ToDGame:
         print('ToggleSkip')
         if user not in self.players:
             return ToDSkipResponse.NotPlaying
-        
         try:
             if user.id in self.skip_votes:
                 self.skip_votes.remove(user.id)
