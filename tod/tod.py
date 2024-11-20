@@ -742,9 +742,6 @@ class ToDGame:
             await self.gameView.on_timeout()
         else:
             await self.gameView.MakeInert()
-        await self.gameView.CreateView()
-        await self.gameView.StartView(self.channel)
-        await self.gameView.MakeInert()
 
     async def RoundStarting(self):
         print('RoundStarting')
