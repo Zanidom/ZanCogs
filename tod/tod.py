@@ -203,7 +203,6 @@ class ToDButton(discord.ui.Button):
                 
                 if geResult == True:
                     print("Outcome 1")
-                    await self.gameView.MakeInert()
                     await interaction.followup.send(f"{curName} left. Not enough players left, game ending.")
                     await ToDCog.TryEndGame(interaction.channel)
                     return
