@@ -499,14 +499,7 @@ class ToDView(discord.ui.View):
             case GameState.PLAYER_HAS_CHOSEN_AWAITING_INPUT:
                 self.text = f"<@{currentChooser.id}>"
                 curName = currentTarget.display_name
-                curChooserName = None
-                try:
-                    curChooserName = currentChooser.nick
-                except:
-                    pass
-
-                if curChooserName is None:
-                    curChooserName = currentChooser.global_name
+                curChooserName = currentChooser.display_name
 
                 embed.title = f"{titlePrefix} - {curName} selected {choiceText}!"
                 if (gameMode == GameMode.GameMode_TrueChaos):
@@ -552,9 +545,7 @@ class ToDView(discord.ui.View):
             scoreList = ""
             for key, score in self.scores.items():
                 nameAwait = await self.channel.guild.fetch_member(key)
-                name = nameAwait.nick
-                if name is None:
-                   name = nameAwait.global_name
+                name = nameAwait.display_name
                 scoreList += f"{name}: {score}\n"
             scoreList += '\n\n'
             if scoreList != "":
@@ -633,9 +624,7 @@ class ToDView(discord.ui.View):
                 playerOrChooser = ToDCog.GetCurrentToDChooser(self.channel)
                 playerOrChooserType = ""
 
-            playerOrChooserName = playerOrChooser.nick
-            if playerOrChooserName is None:
-                playerOrChooserName = playerOrChooser.global_name
+            playerOrChooserName = playerOrChooser.display_name
         except:
             pass
         
@@ -968,7 +957,9 @@ class ToDCog(commands.Cog):
         try:
             truthscores = self.games[channel.id].truthscores
             darescores = self.games[channel.id].darescores
-            scores = {k: truthscores.get(k, 0) + darescores.get(k, 0) for k in set(truthscores) | set(darescores)}
+            scores = {k: truthscores.get(k, 0) + darescores.get(k, 0) 
+                      for k in set(truthscores) | set(darescores)
+                      if k in self.games[channel.id].players} 
             return scores
         except:
             return None
