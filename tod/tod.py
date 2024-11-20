@@ -564,24 +564,27 @@ class ToDView(discord.ui.View):
                 self.add_item(ToDButton(self.channel, ButtonType.GameModeButton))
                 return
             case GameState.CHOOSING_PLAYER:
-                if (self.)
-                self.add_item(ToDButton(self.channel, ButtonType.SkipButton))
+                if (ToDCog.GetPlayerCount(self.channel) > 2):
+                    self.add_item(ToDButton(self.channel, ButtonType.SkipButton))
                 self.add_item(ToDButton(self.channel, ButtonType.TruthButton))
                 self.add_item(ToDButton(self.channel, ButtonType.DareButton))
                 self.add_item(ToDButton(self.channel, ButtonType.RandomButton))
             case GameState.WAITING_FOR_PLAYER:
-                self.add_item(ToDButton(self.channel, ButtonType.SkipButton))
+                if (ToDCog.GetPlayerCount(self.channel) > 2):
+                    self.add_item(ToDButton(self.channel, ButtonType.SkipButton))
                 self.add_item(ToDButton(self.channel, ButtonType.TruthButton))
                 self.add_item(ToDButton(self.channel, ButtonType.DareButton))
                 self.add_item(ToDButton(self.channel, ButtonType.RandomButton))
                 return
             case GameState.PLAYER_HAS_CHOSEN_AWAITING_INPUT:
-                self.add_item(ToDButton(self.channel, ButtonType.SkipButton))
+                if (ToDCog.GetPlayerCount(self.channel) > 2):
+                    self.add_item(ToDButton(self.channel, ButtonType.SkipButton))
                 self.add_item(ToDButton(self.channel, ButtonType.AddAnswerButton))
                 return
             case GameState.INPUT_GIVEN:
                 self.timeout = 60 if mode == GameMode.GameMode_Chaos else None
-                self.add_item(ToDButton(self.channel, ButtonType.SkipButton))
+                if (ToDCog.GetPlayerCount(self.channel) > 2):
+                    self.add_item(ToDButton(self.channel, ButtonType.SkipButton))
                 self.add_item(ToDButton(self.channel, ButtonType.PassButton))
                 self.add_item(ToDButton(self.channel, ButtonType.FailButton))
                 return
@@ -946,6 +949,11 @@ class ToDCog(commands.Cog):
         print('GetPlayerList')
         return self.games[channel.id].players
     
+    @classmethod
+    def GetPlayerCount(self, channel:discord.TextChannel):
+        print('GetPlayerCount')
+        return len(self.games[channel.id].players)
+
     @classmethod
     def GetGameCreator(self, channel:discord.TextChannel):
         print('GetGameCreator')
