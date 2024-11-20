@@ -564,6 +564,7 @@ class ToDView(discord.ui.View):
                 self.add_item(ToDButton(self.channel, ButtonType.GameModeButton))
                 return
             case GameState.CHOOSING_PLAYER:
+                if (self.)
                 self.add_item(ToDButton(self.channel, ButtonType.SkipButton))
                 self.add_item(ToDButton(self.channel, ButtonType.TruthButton))
                 self.add_item(ToDButton(self.channel, ButtonType.DareButton))
@@ -843,7 +844,7 @@ class ToDGame:
 
     async def CheckSkip(self):
         print('CheckSkip')
-        areWeSkipping = len(self.skip_votes) >= (len(self.players) * 0.49)
+        areWeSkipping = len(self.skip_votes) >= (len(self.players) * 0.499)
         if (areWeSkipping):
             print("Skipping confirmed")
             self.wasSkipped = True
@@ -862,7 +863,8 @@ class ToDGame:
                     await self.OnStateChange()
                 case _:
                     return False
-        return True   #returns true if half+ voted to skip
+            return True   #returns true if half+ voted to skip
+        return False
 
     async def EvaluateGameEnd(self):
         print('EvaluateGameEnd')
@@ -956,11 +958,12 @@ class ToDCog(commands.Cog):
     def GetScores(self,channel:discord.TextChannel):
         print('GetScores')
         try:
+            player_ids = [player.id for player in self.games[channel.id].players]
             truthscores = self.games[channel.id].truthscores
             darescores = self.games[channel.id].darescores
             scores = {k: truthscores.get(k, 0) + darescores.get(k, 0) 
                       for k in set(truthscores) | set(darescores)
-                      if k in self.games[channel.id].players} 
+                      if k in player_ids} 
             return scores
         except:
             return None
