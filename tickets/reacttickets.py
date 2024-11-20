@@ -451,7 +451,7 @@ class ReactTickets(commands.Cog):
             )
 
         async with self.config.guild(ctx.guild).closed() as closed:
-            for channel_id in closed[:]:  # Create a copy to safely modify the list
+            for channel_id in closed[:]:
                 channel_obj = ctx.guild.get_channel(channel_id)
                 if channel_obj:
                     try:
@@ -467,7 +467,7 @@ class ReactTickets(commands.Cog):
                             except discord.HTTPException:
                                 return await ctx.send("Something went wrong handling the rate limit in the purge process; aborting.")
                         else:
-                            return await ctx.send("Something went wrong with the Discord API (network usually?) - Aborting.")
+                            return await ctx.send("Something went wrong with the Discord API (network usually) - Aborting.")
                 closed.remove(channel_id)
             await ctx.send("All closed tickets have been purged.")
 

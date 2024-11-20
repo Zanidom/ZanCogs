@@ -181,7 +181,11 @@ class ToDButton(discord.ui.Button):
 
     async def LeaveButtonPress(self, interaction: discord.Interaction):
         print('LeaveButtonPress')
-        #todo finish logic for if they leave and they're the current chooser or tod-er
+        # First check if player is current player or chooser before removing them
+        curPlayer = ToDCog.GetCurrentToDTarget(interaction.channel)
+        curChooser = ToDCog.GetCurrentToDChooser(interaction.channel)
+        isActivePlayer = (interaction.user == curPlayer or interaction.user == curChooser)
+        
         result = await ToDCog.TryLeavePlayer(interaction.channel, interaction.user)
         timeTilStart = ToDCog.GetTimeUntilStart(interaction.channel) 
         
@@ -193,22 +197,21 @@ class ToDButton(discord.ui.Button):
         print (result)
         match result:
             case ToDLeaveResponse.SuccessfulLeave:
-                geResult = await ToDCog.EvaluateGameEnd(interaction.channel)
-                curPlayer = ToDCog.GetCurrentToDTarget(interaction.channel)
-                curChooser = ToDCog.GetCurrentToDChooser(interaction.channel)
-                
                 curName = interaction.user.display_name
-                    
+                # Check game end condition first    
+                geResult = await ToDCog.EvaluateGameEnd(interaction.channel)
+                
                 if geResult == True:
                     print("Outcome 1")
-                    #check if we need to end the game now.
                     await interaction.followup.send(f"{curName} left. Not enough players left, game ending.")
                     await ToDCog.TryEndGame(interaction.channel)
                     return
                 else:
                     print("Outcome 2")
-                    if interaction.user == curPlayer or interaction.user == curChooser:
+                    # If they were active player/chooser, reset game state
+                    if isActivePlayer:
                         await interaction.followup.send(f"{curName} left while they were in play - resetting to choosing player")
+                        # Set state to INPUT_COMPLETE which will trigger choosing new player
                         await ToDCog.TrySetGameState(interaction.channel, GameState.INPUT_COMPLETE)
                     else:
                         await interaction.followup.send(f"{curName} left.")
@@ -218,6 +221,7 @@ class ToDButton(discord.ui.Button):
                 await interaction.followup.send("There's no current game going on!",ephemeral=True)
             case ToDLeaveResponse.Error:
                 await interaction.followup.send("This should literally never send, please @Zan and let him know what you did.",ephemeral=True)
+
 
     async def SkipButtonPress(self, interaction: discord.Interaction):
         print('SkipButtonPress')
@@ -519,13 +523,9 @@ class ToDView(discord.ui.View):
                 else:
                     currentToD = tods.text
 
-                curName = currentTarget.nick
-                if curName is None:
-                    curName = currentTarget.global_name
+                curName = currentTarget.display_name
 
-                curChooserName = currentChooser.nick
-                if curChooserName is None:
-                    curChooserName = currentChooser.global_name
+                curChooserName = currentChooser.display_name
 
                 embed.title = f"{titlePrefix} - {curName} selected {choiceText}!"
                 embed.add_field(name=f"{choiceText.title()}:", value=f"{currentToD}\n\n{curChooserName}, please click the ✅ or ⛔ below once {curName} has passed or failed.")
@@ -807,6 +807,7 @@ class ToDGame:
     async def InputComplete(self):
         print('InputComplete') 
         if (await self.EvaluateGameEnd()):
+            await self.EndGame()
             return True
         
         self.todCount += 1
@@ -1262,7 +1263,7 @@ class ToDCog(commands.Cog):
         messageText = messageText[1:] if messageText[0] == ' ' else messageText
 
         await self.TryAddToD(message.channel, messageText, message.author)
-
+ 
     @classmethod
     async def RefreshView(self, channel:discord.TextChannel, timeOut:int = None):
         print('RefreshView')
