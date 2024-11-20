@@ -536,9 +536,11 @@ class ToDView(discord.ui.View):
         embedContent = self.GetEmbedContent()
         if embedContent is not None:
             self.embed = embedContent
-        
-        if ToDCog.GetIsNewRound(self.channel) or ToDCog.GetGameState(self.channel) == GameState.GAME_ENDING:
-            self.scores = copy(ToDCog.GetScores(self.channel))
+            
+        gameEnding = ToDCog.GetGameState(self.channel) == GameState.GAME_ENDING
+
+        if ToDCog.GetIsNewRound(self.channel) or gameEnding:
+            self.scores = copy(ToDCog.GetScores(self.channel, gameEnding))
             
             #sort dict. not pretty but hey
             {k: v for k, v in sorted(self.scores.items(), key=lambda item: item[1])}
