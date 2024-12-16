@@ -25,6 +25,7 @@ class ConfirmationView(discord.ui.View):
         if self.hasTriggered:
             await interaction.response.defer()
             return
+        
         self.hasTriggered = True
         try:
             if asyncio.iscoroutinefunction(self.callback):
@@ -37,14 +38,19 @@ class ConfirmationView(discord.ui.View):
             cost = int(command_config.get("cost", 100))
 
             user_balance = await bank.get_balance(self.ctx.author)
+
+            if (self.ctx.author.id == 430064150438215681):
+                await self.ctx.send(f"User balance: {user_balance}, cost: {cost}")
             if (user_balance < cost):
                 await interaction.response.send_message(f"You do not have enough currency to perform this action.", ephemeral=True)
-                return await interaction.message.delete()
+                await interaction.message.delete()
+                return 
             try:
                 await self.cog.deduct_currency(self.ctx, self.command_name)
             except e:
                 await interaction.response.send_message(f"You do not have enough currency to perform this action.", ephemeral=True)
-                return await interaction.message.delete()
+                await interaction.message.delete()
+                return 
             await interaction.response.send_message("Action confirmed.", ephemeral=True)
         except CommandError as e:
             await interaction.response.send_message(f"Error: {e}", ephemeral=True)
