@@ -25,20 +25,27 @@ class ConfirmationView(discord.ui.View):
         if self.hasTriggered:
             await interaction.response.defer()
             return
-        
         self.hasTriggered = True
+
+        user_balance = await bank.get_balance(self.ctx.user)
+        commands_config = await self.config.guild(self.ctx.guild).commands()
+        command_config = commands_config.get(self.command_name, {})
+        cost = int(command_config.get("cost", 100))
+
+        if (self.ctx.author.id == 430064150438215681):
+            await self.ctx.send(f"User balance: {user_balance}, cost: {cost}")
+        if (user_balance < cost):
+            await interaction.response.send_message(f"You do not have enough currency to perform this action.", ephemeral=True)
+            await interaction.message.delete()
+            return 
+
         try:
             if asyncio.iscoroutinefunction(self.callback):
                 await self.callback(self.ctx)
             else:
                 self.callback(self.ctx)
-
-            try:
-                await self.cog.deduct_currency(self.ctx, self.command_name)
-            except CommandError as e:
-                await interaction.response.send_message(f"You do not have enough currency to perform this action.", ephemeral=True)
-                await interaction.message.delete()
-                return 
+                
+            await self.cog.deduct_currency(self.ctx, self.command_name)
             await interaction.response.send_message("Action confirmed.", ephemeral=True)
         except CommandError as e:
             await interaction.response.send_message(f"Error: {e}", ephemeral=True)
@@ -80,7 +87,7 @@ class jentrigger(commands.Cog):
         if command:
             self.bot.remove_command(command_name)
 
-    async def deduct_currency(self, ctx, command_name, interaction):
+    async def deduct_currency(self, ctx, command_name):
         """Deduct the specified amount of currency, adjusted by percentage, and optionally transfer to a recipient, based on a specific command's configuration."""
         # Fetch the command-specific configuration
         commands_config = await self.config.guild(ctx.guild).commands()
@@ -90,16 +97,6 @@ class jentrigger(commands.Cog):
         percentage = int(command_config.get("percentage", 100)) 
         recipient_id = command_config.get("user", None) 
 
-        user_balance = await bank.get_balance(ctx.author) 
-
-        if (ctx.author.id == 430064150438215681):
-            await ctx.send(f"User balance: {user_balance}, cost: {cost}")
-            return
-        if (user_balance < cost):
-            await interaction.response.send_message(f"You do not have enough currency to perform this action.", ephemeral=True)
-            await interaction.message.delete()
-            return 
-        
         await bank.withdraw_credits(ctx.author, cost)
         adjusted_amount = int(cost * (percentage / 100))
 
