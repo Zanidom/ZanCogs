@@ -40,8 +40,11 @@ class ConfirmationView(discord.ui.View):
             if (user_balance < cost):
                 await interaction.response.send_message(f"You do not have enough currency to perform this action.", ephemeral=True)
                 return await interaction.message.delete()
-
-            await self.cog.deduct_currency(self.ctx, self.command_name)
+            try:
+                await self.cog.deduct_currency(self.ctx, self.command_name)
+            except e:
+                await interaction.response.send_message(f"You do not have enough currency to perform this action.", ephemeral=True)
+                return await interaction.message.delete()
             await interaction.response.send_message("Action confirmed.", ephemeral=True)
         except CommandError as e:
             await interaction.response.send_message(f"Error: {e}", ephemeral=True)
