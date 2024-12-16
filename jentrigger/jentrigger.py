@@ -27,7 +27,7 @@ class ConfirmationView(discord.ui.View):
             return
         
         self.hasTriggered = True
-        hasEnough = await self.cog.verify_currency(interaction, self.command_name)
+        hasEnough = await self.cog.verify_currency(self.ctx, self.command_name)
         if (hasEnough == True):
             await interaction.response.send_message(f"You do not have enough currency to perform this action.", ephemeral=True)
             await interaction.message.delete()
@@ -81,12 +81,12 @@ class jentrigger(commands.Cog):
         if command:
             self.bot.remove_command(command_name)
 
-    async def verify_currency(self, interaction, command_name):
+    async def verify_currency(self, ctx, command_name):
         """Verifies the user has enough currency to perform the specified command."""
 
-        user_balance = await self.cog.bank.get_balance(interaction.user)
+        user_balance = await self.cog.bank.get_balance(ctx.user)
         commands_config = await self.cog.config.guild(self.ctx.guild).commands()
-        command_config = commands_config.get(self.command_name, {})
+        command_config = commands_config.get(command_name, {})
         cost = int(command_config.get("cost", 100))
 
         return user_balance >= cost
