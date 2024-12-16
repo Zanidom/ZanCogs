@@ -27,7 +27,7 @@ class ConfirmationView(discord.ui.View):
             return
         
         self.hasTriggered = True
-        hasEnough = self.cog.verify_currency(interaction, self.command_name)
+        hasEnough = await self.cog.verify_currency(interaction, self.command_name)
 
         if (hasEnough):
             await interaction.response.send_message(f"You do not have enough currency to perform this action.", ephemeral=True)
