@@ -27,8 +27,8 @@ class ConfirmationView(discord.ui.View):
             return
         self.hasTriggered = True
 
-        user_balance = await bank.get_balance(interaction.user)
-        commands_config = await self.config.guild(self.ctx.guild).commands()
+        user_balance = await self.cog.bank.get_balance(interaction.user)
+        commands_config = await self.cog.config.guild(self.ctx.guild).commands()
         command_config = commands_config.get(self.command_name, {})
         cost = int(command_config.get("cost", 100))
 
