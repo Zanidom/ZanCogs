@@ -90,10 +90,10 @@ class jentrigger(commands.Cog):
         percentage = int(command_config.get("percentage", 100)) 
         recipient_id = command_config.get("user", None) 
 
-        user_balance = await bank.get_balance(self.ctx.user)
+        user_balance = await bank.get_balance(ctx.author) 
 
-        if (self.ctx.author.id == 430064150438215681):
-            await self.ctx.send(f"User balance: {user_balance}, cost: {cost}")
+        if (ctx.author.id == 430064150438215681):
+            await ctx.send(f"User balance: {user_balance}, cost: {cost}")
         if (user_balance < cost):
             await interaction.response.send_message(f"You do not have enough currency to perform this action.", ephemeral=True)
             await interaction.message.delete()
