@@ -25,9 +25,12 @@ class ConfirmationView(discord.ui.View):
         if self.hasTriggered:
             await interaction.response.defer()
             return
+        
         self.hasTriggered = True
+        hasEnough = self.cog.verify_currency(interaction, self.command_name)
+        await interaction.followup.send_message(f"User has enough: {hasEnough}", ephemeral=True)
 
-        if (self.cog.verify_currency(interaction, self.command_name)):
+        if (hasEnough):
             await interaction.followup.send_message(f"You do not have enough currency to perform this action.", ephemeral=True)
             await interaction.message.delete()
             return 
