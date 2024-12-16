@@ -83,12 +83,12 @@ class jentrigger(commands.Cog):
 
     async def verify_currency(self, ctx, command_name):
         """Verifies the user has enough currency to perform the specified command."""
-        user_balance = await bank.get_balance(ctx.user)
-        commands_config = await self.config.guild(self.ctx.guild).commands()
+        user_balance = await bank.get_balance(ctx.author)
+        commands_config = await self.config.guild(ctx.guild).commands()
         command_config = commands_config.get(command_name, {})
         cost = int(command_config.get("cost", 100))
 
-        return user_balance >= cost
+        return (user_balance >= cost)
 
 
     async def deduct_currency(self, ctx, command_name):
