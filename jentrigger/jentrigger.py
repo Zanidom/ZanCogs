@@ -27,14 +27,7 @@ class ConfirmationView(discord.ui.View):
             return
         self.hasTriggered = True
 
-        user_balance = await self.cog.bank.get_balance(interaction.user)
-        commands_config = await self.cog.config.guild(self.ctx.guild).commands()
-        command_config = commands_config.get(self.command_name, {})
-        cost = int(command_config.get("cost", 100))
-
-        if (self.ctx.author.id == 430064150438215681):
-            await interaction.response.send_message(f"User balance: {user_balance}, cost: {cost}")
-        if (user_balance < cost):
+        if (self.cog.verify_currency(interaction, self.command_name)):
             await interaction.followup.send_message(f"You do not have enough currency to perform this action.", ephemeral=True)
             await interaction.message.delete()
             return 
@@ -86,6 +79,17 @@ class jentrigger(commands.Cog):
         command = self.bot.get_command(command_name)
         if command:
             self.bot.remove_command(command_name)
+
+    async def verify_currency(self, interaction, command_name):
+        """Verifies the user has enough currency to perform the specified command."""
+
+        user_balance = await self.cog.bank.get_balance(interaction.user)
+        commands_config = await self.cog.config.guild(self.ctx.guild).commands()
+        command_config = commands_config.get(self.command_name, {})
+        cost = int(command_config.get("cost", 100))
+
+        return user_balance >= cost
+
 
     async def deduct_currency(self, ctx, command_name):
         """Deduct the specified amount of currency, adjusted by percentage, and optionally transfer to a recipient, based on a specific command's configuration."""
