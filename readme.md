@@ -1,0 +1,1 @@
+Zan's cog repo! Initially added for the purpose of updating cogs to v3.5 when it was released and broke a bunch of legacy cogs, but now I am making my own stuff.

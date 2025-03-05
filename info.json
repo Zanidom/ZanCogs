@@ -1,0 +1,9 @@
+{
+    "author": "Zanidom",
+    "short": "ZanCogs",
+    "description": "A collection of cogs updated to function on Redbot v3.5.0+.",
+    "branch": "master",
+    "tags": ["cogs", "redbot"],
+    "requirements": ["Redbot v3.5.0+"]
+  }
+  
