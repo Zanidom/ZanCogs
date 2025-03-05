@@ -39,36 +39,35 @@ class ReactTickets(commands.Cog):
             cases={}, 
             category_messages={},
         )
-        
+
     @commands.Cog.listener()
     async def on_ready(self):
         """Event that runs when the bot is ready."""
         for guild in self.bot.guilds:
-            enabled_msg_id = await self.config.guild(guild).enabled()
-            if enabled_msg_id:
-                channel_id = await self.config.guild(guild).channel()
-                channel = guild.get_channel(channel_id)
+            
+            message_id = await self.config.guild(guild).enabled()
+            if message_id:
+                request_channel_id = await self.config.guild(guild).request_channel()
+                channel = guild.get_channel(request_channel_id)
                 if channel:
                     try:
-                        message = await channel.fetch_message(enabled_msg_id)
+                        message = await channel.fetch_message(message_id)
                         
                         cases = await self.config.guild(guild).cases.get_raw()
                         expected_emojis = self._get_emoji_list(cases)
-
-                        current_emojis = [str(reaction.emoji) for reaction in message.reactions]
-
+                        current_emojis = [str(r.emoji) for r in message.reactions]
                         for emoji in expected_emojis:
                             if emoji not in current_emojis:
                                 await message.add_reaction(emoji)
-
-                        continue  
-
+                        continue 
+                    
                     except discord.NotFound:
                         pass
                     except discord.Forbidden:
                         print("Permission error while fetching or modifying the react ticket message.")
-
+                        
             await self.create_react_ticket_message(guild)
+
 
 
 
