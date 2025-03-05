@@ -1,0 +1,15 @@
+{
+    "author": ["Zan"],
+    "bot_version": "3.5.3",
+    "end_user_data_statement": "This cog does not store any end user data.",
+    "install_msg": "Thanks for installing the Arbitrary Counter cog!",
+    "min_bot_version": "3.0.0",
+    "short": "A cog to create and manage arbitrary counters.",
+    "description": "Allows users to set, delete, increment and decrement values stored in arbitrary tokens.",
+    "name": "Arbitrary Counter",
+    "required_cogs": {},
+    "requirements": [],
+    "tags": ["counter", "arbitrary", "utility"],
+    "type": "COG",
+    "version": "1.0.0"
+}

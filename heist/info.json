@@ -1,0 +1,9 @@
+{
+  "author": [ "Redjumpman", "Malarne (Malarne#1418)", "Zan (Zan#6176)" ],
+    "short" : "Heist mini-game inspired by Twitch's deep bot",
+    "description" : "v3 version of RJM heist cog by Malarne (Malarne#1418), updated specifically for TBC server by Zan (Zan#6176)",
+    "name" : "Heist",
+    "requirements": ["tabulate"],
+    "tags" : ["heist", "games", "economy"],
+    "install_msg" : "Thank you for installing Heist.\nOriginally made by Redjumpman, updated to v3 by Malarne, then adapted by Zan."
+}

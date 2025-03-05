@@ -1,0 +1,15 @@
+{
+  "author": [ "Zan" ],
+  "bot_version": "3.5.3",
+  "end_user_data_statement": "This cog does not store end user data.",
+  "install_msg": "Thank you for installing the BotPay cog!",
+  "short": "A cog to handle payments from the hosting bot.",
+  "description": "Allows the bot running this cog to pay a user.",
+  "name": "SBPay",
+  "required_cogs": {},
+  "requirements": [],
+  "tags": [ "pay", "money", "economy" ],
+  "type": "COG",
+  "version": "1.0.0",
+  "hidden": false
+}

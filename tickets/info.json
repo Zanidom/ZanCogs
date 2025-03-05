@@ -1,0 +1,9 @@
+{
+  "author": [ "saurichable", "Dav", "Zan" ],
+  "install_msg": "Thank you for installing ReactTickets!",
+  "name": "ReactTickets",
+  "short": "Reaction based support tickets.",
+  "description": "Reaction based assignable support tickets with custom cases (reasons). Built by Saurichable&Dav, then forked by Zan#6176 to add NSFW support and update to 3.5.3.",
+  "tags": [ "tickets", "support", "reaction", "ticket" ],
+  "end_user_data_statement": "This cog stores user IDs for the duration of their support ticket being open."
+}

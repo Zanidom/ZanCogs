@@ -1,0 +1,9 @@
+{
+  "author": [ "Zan (Zan#6176)" ],
+    "short" : "A purchaseable role for folks to fight over",
+    "description" : "Role to fight over specifically made for TBC server by Zan (Zan#6176)",
+    "name" : "KotR",
+    "requirements": ["tabulate"],
+    "tags" : ["economy", "games"],
+    "install_msg" : "Thank you for installing KotR. Made by Zan#6176."
+}

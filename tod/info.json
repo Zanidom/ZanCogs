@@ -1,0 +1,9 @@
+{
+  "author": ["Zan" ],
+  "name": "ToD",
+  "max_bot_version": "3.6.0",
+  "min_bot_version": "3.5.0",
+  "description": "ToD cog by Zanidom for RedBot v3.5.0+.",
+  "short": "ToD cog",
+  "install_msg": "ToD cog for RedBot v3.5.3 installed."
+}

@@ -1,0 +1,8 @@
+{
+  "author": ["Zanidom"],
+  "DESCRIPTION": "Outputs a link to a thread when it's created in a specific channel",
+  "SHORT": "Alerts on new thread creation",
+  "NAME": "ThreadAlert",
+  "TAGS": ["Utility", "threads"],
+  "min_bot_version": "3.5.0"
+}

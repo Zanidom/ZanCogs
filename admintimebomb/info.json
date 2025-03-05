@@ -1,0 +1,13 @@
+{
+  "author": [ "Zan" ],
+  "bot_version": "3.5.3",
+  "end_user_data_statement": "This cog does not store end user data.",
+  "install_msg": "Going to be fun!",
+  "short": "A cog that lets us hide secrets on our discord server!",
+  "description": "Allows admins to play a game with users",
+  "name": "adminTBC",
+  "tags": [ "TBC" ],
+  "type": "COG",
+  "version": "1.0.0",
+  "hidden": false
+}

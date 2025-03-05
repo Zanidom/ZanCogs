@@ -1,0 +1,15 @@
+{
+    "author": ["Zan"],
+    "bot_version": "3.5.3",
+    "end_user_data_statement": "This cog does not store any end user data.",
+    "install_msg": "Thanks for installing the numerous wisdom balls!",
+    "min_bot_version": "3.0.0",
+    "short": "A cog that gives you access to the wondrous wisdom balls...",
+    "description": "Picks an arbitrary response!",
+    "name": "6ball",
+    "required_cogs": {},
+    "requirements": [],
+    "tags": ["6ball", "fun"],
+    "type": "COG",
+    "version": "1.0.0"
+}

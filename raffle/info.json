@@ -1,0 +1,9 @@
+{
+  "author": [ "Zan" ],
+  "install_msg": "Thank you for installing Zan's Raffle cog!",
+  "name": "Raffle",
+  "short": "Lets you draw a raffle from Discord members",
+  "description": "Lets you draw a raffle from Discord members",
+  "tags": [ "Raffle"],
+  "end_user_data_statement": "This cog stores Discord Users for the duration of their participation in the raffle."
+}
