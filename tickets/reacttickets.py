@@ -305,43 +305,26 @@ class ReactTickets(commands.Cog):
     async def ticketset_start(self, ctx: commands.Context):
         """Start the support system."""
         data = await self.config.guild(ctx.guild).all()
-        
-        channel = ctx.guild.get_channel(data["channel"])
-        if not channel:
+    
+        management_channel = ctx.guild.get_channel(data["channel"])
+        if not management_channel:
             return await ctx.send("Uh oh, support is not set up properly - no management channel assigned.")
-        try:
-            message = await channel.fetch_message(data["enabled"])
-            if message:
-                return await ctx.send("Uh oh, support has already been started.")
-        except discord.HTTPException:
-            pass
 
-        channel = ctx.guild.get_channel(data["request_channel"])
-        if not channel:
+        request_channel = ctx.guild.get_channel(data["request_channel"])
+        if not request_channel:
             return await ctx.send("Uh oh, support is not set up properly - no request channel assigned.")
+
         try:
-            message = await channel.fetch_message(data["enabled"])
+            message = await request_channel.fetch_message(data["enabled"])
             if message:
                 return await ctx.send("Uh oh, support has already been started.")
         except discord.HTTPException:
             pass
 
-
-        cases = await self.config.guild(ctx.guild).cases.get_raw()
-        description = self._get_cases_string(
-            cases, "React below with the reaction based on what you want.\n"
-        )
-
-        embed = discord.Embed(
-            colour=await ctx.embed_colour(),
-            title=f"{ctx.guild.name} support tickets",
-            description=description,
-        )
-        msg = await channel.send(embed=embed)
-        await self._add_reactions(msg, self._get_emoji_list(cases))
-        await self.config.guild(ctx.guild).enabled.set(msg.id)
+        await self.create_react_ticket_message(ctx.guild)
         self.enabled_cache[ctx.guild.id] = True
         await ctx.tick()
+
 
     @ticketset.command(name="stop")
     async def ticketset_stop(self, ctx: commands.Context):
