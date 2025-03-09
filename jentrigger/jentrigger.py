@@ -297,7 +297,7 @@ class jentrigger(commands.Cog):
                 await self.jen_show(ctx, args[0])
                 return
             elif command_name.lower() == "copy":
-                if len(args) < 2:
+                if len(args) < 1:
                     await ctx.reply("Failed, please specify correct guild ID to copy from.")
                     return
                 await self.jen_clear(ctx, args[0], args[1])
