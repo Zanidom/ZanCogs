@@ -330,6 +330,10 @@ class jentrigger(commands.Cog):
 
         await self.recursive_set(self.config, ctx.guild, source_data)
 
+        new_commands = await self.config.guild(ctx.guild).commands()
+        for command_name in new_commands.keys():
+            self.add_dynamic_command(ctx.guild, command_name)
+
         await ctx.send(f"Configuration from guild {guildCast} has been copied to this guild.")
 
 
