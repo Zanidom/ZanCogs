@@ -330,7 +330,7 @@ class jentrigger(commands.Cog):
             return
 
         await self.config.guild(ctx.guild).clear()
-        await self.config.guild(ctx.guild).commands.set(source_data)
+        await self.config.guild(ctx.guild).set(source_data)
 
         await ctx.send(f"Configuration from guild {guildCast} has been copied to this guild.")
 
