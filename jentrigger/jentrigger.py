@@ -325,8 +325,6 @@ class jentrigger(commands.Cog):
         if not source_data:
             await ctx.send("No configuration data was found for the provided guild ID.")
             return
-        else:
-            await ctx.send(source_data)
 
         await self.config.guild(ctx.guild).clear()
 
@@ -337,6 +335,7 @@ class jentrigger(commands.Cog):
             self.add_dynamic_command(ctx.guild, command_name)
 
         await ctx.send(f"Configuration from guild {guildCast} has been copied to this guild.")
+        await ctx.send(new_commands)
 
 
     async def recursive_set(self, config_obj, guild, data, key_prefix=""):
