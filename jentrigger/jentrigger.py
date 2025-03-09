@@ -330,33 +330,10 @@ class jentrigger(commands.Cog):
             return
 
         await self.config.guild(ctx.guild).clear()
-        #reregister? wonder if this is where the issue is?
-        self.__configRegister()
-
-        self.objectsAdded = ""
-        await self.recursive_set(self.config, ctx.guild, source_data)
-        await ctx.send(self.objectsAdded)
-
-        new_commands = await self.config.guild(ctx.guild).commands()
-        for command_name in new_commands.keys():
-            self.add_dynamic_command(ctx.guild, command_name)
+        await self.config.guild(ctx.guild).commands.set(source_data)
 
         await ctx.send(f"Configuration from guild {guildCast} has been copied to this guild.")
-        await ctx.send(new_commands)
 
-
-    async def recursive_set(self, config_obj, guild, data, key_prefix=""):
-        """
-        Recursively set keys from the source data into the target config.
-        If key_prefix is provided, it prepends it to the key using dot notation.
-        """
-        for key, value in data.items():
-            compound_key = f"{key_prefix}.{key}" if key_prefix else key
-            if isinstance(value, dict):
-                await self.recursive_set(config_obj, guild, value, compound_key)
-            else:
-                self.objectsAdded += f"${compound_key}, value={value}\n"
-                await config_obj.guild(guild).set_raw(compound_key, value=value)
 
     async def jen_add(self, ctx, command_name: str):
         """Add a new custom command."""
