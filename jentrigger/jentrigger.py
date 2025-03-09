@@ -314,8 +314,13 @@ class jentrigger(commands.Cog):
         Copy configuration from another discord server.
         Usage: [p]copy <guild_id>
         """
+        try:
+            guildCast = int(source_guild)
+        except:
+            await ctx.send("Something went wrong with the provided guild ID, verify it's correct")
+            return
 
-        source_data = await self.config.guild_from_id(source_guild).all()
+        source_data = await self.config.guild_from_id(guildCast).all()
 
         if not source_data:
             await ctx.send("No configuration data was found for the provided guild ID.")
@@ -325,7 +330,7 @@ class jentrigger(commands.Cog):
 
         await self.recursive_set(self.config, ctx.guild, source_data)
 
-        await ctx.send(f"Configuration from guild {source_guild} has been copied to this guild.")
+        await ctx.send(f"Configuration from guild {guildCast} has been copied to this guild.")
 
 
     async def recursive_set(self, config_obj, guild, data, key_prefix=""):
