@@ -57,6 +57,9 @@ class jentrigger(commands.Cog):
     """Cog to let you buy edges for Jen!"""
     def __init__(self, bot):
         self.bot = bot
+        self.__configRegister()
+
+    def __configRegister(self):
         self.config = Config.get_conf(self, identifier=123432123, force_registration=True)
         
         default_guild = {
@@ -327,8 +330,12 @@ class jentrigger(commands.Cog):
             return
 
         await self.config.guild(ctx.guild).clear()
+        #reregister? wonder if this is where the issue is?
+        self.__configRegister()
 
+        self.objectsAdded = ""
         await self.recursive_set(self.config, ctx.guild, source_data)
+        await ctx.send(self.objectsAdded)
 
         new_commands = await self.config.guild(ctx.guild).commands()
         for command_name in new_commands.keys():
@@ -348,6 +355,7 @@ class jentrigger(commands.Cog):
             if isinstance(value, dict):
                 await self.recursive_set(config_obj, guild, value, compound_key)
             else:
+                self.objectsAdded += f"${compound_key}, value={value}\n"
                 await config_obj.guild(guild).set_raw(compound_key, value=value)
 
     async def jen_add(self, ctx, command_name: str):
