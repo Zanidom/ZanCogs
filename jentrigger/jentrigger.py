@@ -343,7 +343,7 @@ class jentrigger(commands.Cog):
             if isinstance(value, dict):
                 await self.recursive_set(config_obj, guild, value, compound_key)
             else:
-                await config_obj.guild(guild).set_raw(compound_key, value)
+                await config_obj.guild(guild).set_raw(compound_key, value=value)
 
     async def jen_add(self, ctx, command_name: str):
         """Add a new custom command."""
