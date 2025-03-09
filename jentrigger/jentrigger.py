@@ -267,7 +267,7 @@ class jentrigger(commands.Cog):
         def check_permissions(ctx):
             return ctx.author.guild_permissions.manage_guild or ctx.author.guild_permissions.administrator
         
-        if command_name.lower() in ["add", "set", "clear", "remove", "delete", "show", "view"]:
+        if command_name.lower() in ["add", "set", "clear", "remove", "delete", "show", "view", "copy"]:
             if not check_permissions(ctx):
                 await ctx.send("You do not have the necessary permissions to perform this action.")
                 return
@@ -296,15 +296,53 @@ class jentrigger(commands.Cog):
             elif command_name.lower() == "view" or command_name.lower() == "show":
                 await self.jen_show(ctx, args[0])
                 return
+            elif command_name.lower() == "copy":
+                if len < 2:
+                    await ctx.reply("Failed, please specify correct guild ID to copy from.")
+                    return
+                await self.jen_clear(ctx, args[0], args[1])
+                return
+            
         elif command_name.lower() == "list":
             await self.jen_list(ctx)
             return
         else:
             await self.dynamic_command_handler(ctx, command_name)
 
+    async def jen_copy(self, ctx, source_guild: int):
+        """
+        Copy configuration from another discord server.
+        Usage: [p]copy <guild_id>
+        """
+
+        source_data = await self.config.guild_from_id(source_guild).all()
+
+        if not source_data:
+            await ctx.send("No configuration data was found for the provided guild ID.")
+            return
+
+        await self.config.guild(ctx.guild).clear()
+
+        await self.recursive_set(self.config, ctx.guild, source_data)
+
+        await ctx.send(f"Configuration from guild {source_guild} has been copied to this guild.")
+
+
+    async def recursive_set(self, config_obj, guild, data, key_prefix=""):
+        """
+        Recursively set keys from the source data into the target config.
+        If key_prefix is provided, it prepends it to the key using dot notation.
+        """
+        for key, value in data.items():
+            compound_key = f"{key_prefix}.{key}" if key_prefix else key
+            if isinstance(value, dict):
+                await self.recursive_set(config_obj, guild, value, compound_key)
+            else:
+                await config_obj.guild(guild).set_raw(compound_key, value)
+
     async def jen_add(self, ctx, command_name: str):
         """Add a new custom command."""
-        if command_name.lower() in ["add", "set", "clear", "show", "view", "remove", "delete", "list"]:
+        if command_name.lower() in ["add", "set", "clear", "show", "view", "remove", "delete", "list", "copy"]:
             await ctx.send(f"The command `{command_name}` is a system command.")
             return
         async with self.config.guild(ctx.guild).commands() as commands:
