@@ -1,136 +1,124 @@
 import discord
 from enum import Enum
-from redbot.core import commands, app_commands, Config, checks
+from redbot.core import commands, Config
 import asyncio
+from .views.list_view import SafewordListView
 
-#class Response(Enum):
-#    PING_ADMINS = 1
-#    SLOWMODE = 2
-#    LOCK_CHANNEL = 3
-#
-#class ResponseList(discord.ui.)
-#
-#class AddSafewordActionModal(discord.ui.Modal, title="Add a safeword"):
-#    newSafeWord = discord.ui.TextInput(label=f"Please input a safeword:", style=discord.TextStyle.short, required=True, max_length = 20, placeholder = "Safeword")
-#    newSafeWordResponse = discord.ui.Select(placeholder=Response.PING_ADMINS, )
-#
-#
-#    async def on_submit(self, interaction:discord.Interaction):
-#        await interaction.response.send_message(text=f"Added safeword {self.newSafeWord.value} with action {self.newSafeWordResponse.value}", )
-#
-#class EditSafewordActionModal(discord.ui.Modal, title="Edit a safeword"):
-#    answer = discord.ui.TextInput(label=f"Please input a safeword:", style=discord.TextStyle.short, required=True, max_length = 20, placeholder = "Safeword")
-#
-#    async def on_submit(self, interaction:discord.Interaction):
-#        await interaction.response.defer()
-#
-#        await interaction.followup.send(f"Something went wrong with your input:\n{self.answer.value}\nPlease try again.", ephemeral=True)
-#
-#class DeleteSafewordActionModal(discord.ui.Modal, title="Truth or Dare"):
-#    answer = discord.ui.TextInput(label=f"Please input a safeword:", style=discord.TextStyle.short, required=True, max_length = 20, placeholder = "Safeword")
-#
-#    async def on_submit(self, interaction:discord.Interaction):
-#        await interaction.response.defer()
-#
-#        await interaction.followup.send(f"Something went wrong with your input:\n{self.answer.value}\nPlease try again.", ephemeral=True)
-#
-#
-#
-#
-#class Safeword (commands.Cog):
-#
-#    comGroup = app_commands.Group(name="safeword", description="Commands for safewords")
-#
-#    def __init__ (self, bot):
-#        self.bot = bot
-#        self.config = Config.get_conf(self, identifier=24681357, force_registration=True)
-#        default_guild = {
-#            "Safewords": {
-#            "SAFEWORD": Response.PING_ADMINS
-#            }
-#        }
-#        self.config.register_guild(**default_guild)
-#
-#    @app_commands.command()
-#    @app_commands.guild_only()
-#    @checks.admin_or_permissions(manage_guild=True)
-#    @comGroup.command(name="add")
-#    async def AddSafeword():
-#        guildSafewords = self.config.guild(message.guild)
-#
-#    @app_commands.command()
-#    @app_commands.guild_only()
-#    @checks.admin_or_permissions(manage_guild=True)
-#    @comGroup.command(name="edit")
-#    async def EditSafeword():
-#        guildSafewords = self.config.guild(message.guild)
-#        
-#    @app_commands.command()
-#    @app_commands.guild_only()
-#    @checks.admin_or_permissions(manage_guild=True)
-#    @comGroup.command(name="add")
-#    async def DeleteSafeword(self, interaction: discord.Interaction,):
-#        guildSafewords = self.config.guild(message.guild)
-#
-#
-#    @commands.Cog.listener()
-#    async def on_message(self, message):
-#        guildSafewords = self.config.guild(message.guild).Safewords()
-#        for word, action  in guildSafewords:
-#            if word in message.content:
-#                match action:
-#                    case Response.PING_ADMINS:
-#                        message.reply(f"")
-#                    case Response.SLOWMODE:
-#
-#                    case Response.LOCK_CHANNEL:
-#
-class Safeword (commands.Cog):
-    def __init__ (self, bot):
+class Response(Enum):
+    NO_RESPONSE = 0
+    SEND_MESSAGE = 1
+    SLOWMODE = 2
+
+class Safeword(commands.Cog):
+    def __init__(self, bot):
         self.bot = bot
         self.config = Config.get_conf(self, identifier=1234567890)
-        default_channel = {"slowmode_duration": 300}
-        self.config.register_channel(**default_channel)
-    
-    @commands.Cog.listener()
-    async def on_message(self, message):
-        if "SAFEWORD" in message.content and not message.author.bot:
-            adminRole = discord.utils.get(message.guild.roles, name="Admin")
-            if adminRole is not None:
-                await message.reply(f"<@&{adminRole.id}>", allowed_mentions=discord.AllowedMentions(everyone=False, roles=True, users=False))
-            
-            slowmode_duration = await self.config.channel(message.channel).slowmode_duration()
-            # Set the slowmode if the bot has permissions
-            if message.channel.permissions_for(message.guild.me).manage_channels:
-                await message.channel.edit(slowmode_delay=slowmode_duration)
-                self.bot.loop.create_task(self.reset_slowmode(message.channel))
+        self.config.register_guild(safewords=[])
+        self.config.register_channel(slowmode_duration=300)
 
-    async def reset_slowmode(self, channel):
-        slowmode_duration = await self.config.channel(channel).slowmode_duration()
-        await asyncio.sleep(slowmode_duration)
+    @commands.Cog.listener()
+    async def on_message(self, message: discord.Message):
+        if message.author.bot or not message.guild:
+            return
+
+        safewords = await self.config.guild(message.guild).safewords()
+        trigger_map = {entry["trigger"]: entry for entry in safewords}
+        words = set(message.content.split())
+
+        matched = next((entry for trigger, entry in trigger_map.items() if trigger in words), None)
+        if matched:
+            response_type = Response[matched["response"]]
+            if response_type in (Response.SEND_MESSAGE, Response.SLOWMODE):
+                response_text = matched.get("message", "")
+                if response_text:
+                    await message.channel.send(
+                        f"{response_text}",
+                        allowed_mentions=discord.AllowedMentions(roles=True, users=False)
+                    )
+
+            if response_type == Response.SLOWMODE:
+                if message.channel.permissions_for(message.guild.me).manage_channels:
+                    duration = await self.config.channel(message.channel).slowmode_duration()
+                    await message.channel.edit(slowmode_delay=duration)
+                    self.bot.loop.create_task(self.reset_slowmode(message.channel))
+
+    async def reset_slowmode(self, channel: discord.TextChannel):
+        duration = await self.config.channel(channel).slowmode_duration()
+        await asyncio.sleep(duration)
         await channel.edit(slowmode_delay=0)
 
     @commands.group()
     @commands.guild_only()
     async def safeword(self, ctx):
-        """Commands related to safeword functionality."""
+        """Commands related to safewords."""
         pass
 
     @safeword.command()
-    @commands.has_permissions(manage_channels=True)
-    async def slowmode(self, ctx, seconds: int, channel: discord.TextChannel = None):
+    @commands.has_permissions(manage_guild=True)
+    async def add(self, ctx, trigger: str, *, message: str = ""):
         """
-        Set the safeword slowmode duration for a channel.
+        Add a new safeword with default response (SEND_MESSAGE).
+        Response can be edited later via ;safeword list -> Edit.
+        """
+        safewords = await self.config.guild(ctx.guild).safewords()
+        trigger = trigger
 
-        Usage: [p]safeword slowmode <seconds> [channel]
-        If channel is not specified, the current channel is used.
-        """
-        if channel is None:
-            channel = ctx.channel
-        if seconds < 0:
-            await ctx.send("The slowmode duration must be a non-negative integer.")
+        if any(word["trigger"] == trigger for word in safewords):
+            await ctx.send("That safeword already exists.")
             return
-        await self.config.channel(channel).slowmode_duration.set(seconds)
-        await ctx.send(f"Safeword slowmode duration for {channel.mention} set to {seconds} seconds.")
+
+        safewords.append({
+            "trigger": trigger,
+            "response": "SEND_MESSAGE",
+            "message": message
+        })
+        await self.config.guild(ctx.guild).safewords.set(safewords)
+        await ctx.send(f"Safeword `{trigger}` added.")
 
 
+    @safeword.command()
+    @commands.has_permissions(manage_guild=True)
+    async def delete(self, ctx, trigger: str):
+        """
+        Deletes a safeword entirely.
+        """
+        safewords = await self.config.guild(ctx.guild).safewords()
+        trigger = trigger
+        new_list = [word for word in safewords if word["trigger"] != trigger]
+        if len(new_list) == len(safewords):
+            await ctx.send("That safeword doesn't exist.")
+            return
+
+        await self.config.guild(ctx.guild).safewords.set(new_list)
+        await ctx.send(f"Safeword `{trigger}` deleted.")
+
+    @safeword.command()
+    @commands.has_permissions(manage_guild=True)
+    async def edit(self, ctx, trigger: str, response: Response, *, message: str = ""):
+        """
+        Edits an existing safeword.
+        """
+        safewords = await self.config.guild(ctx.guild).safewords()
+        trigger = trigger
+        for word in safewords:
+            if word["trigger"] == trigger:
+                word["response"] = response.name
+                word["message"] = message
+                await self.config.guild(ctx.guild).safewords.set(safewords)
+                await ctx.send(f"Safeword `{trigger}` updated.")
+                return
+        await ctx.send("Safeword not found.")
+
+    @safeword.command()
+    @commands.has_permissions(manage_guild=True)
+    async def list(self, ctx):
+        """
+        Lists out all existing safewords. Allows editing on a per-item basis for admins.
+        """
+        safewords = await self.config.guild(ctx.guild).safewords()
+        if not safewords:
+            await ctx.send("No safewords configured.")
+            return
+
+        view = SafewordListView(ctx, safewords, self.config)
+        await view.send_initial()
