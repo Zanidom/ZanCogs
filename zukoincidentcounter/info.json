@@ -1,0 +1,8 @@
+{
+  "author": [ "Zan (Zanidom)" ],
+    "short" : "Cog that tracks a datetime since Zuko hurt himself :elmochaos:",
+    "description" : "Cog that lets Zan check datetimes",
+    "name" : "ZukoTracker",
+    "tags" : ["roles"],
+    "install_msg" : "Thank you for installing Zan's Zukotracker cog!"
+}
