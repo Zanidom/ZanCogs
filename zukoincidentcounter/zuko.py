@@ -42,7 +42,9 @@ class Zuko(commands.Cog):
 
             text = str(days)
             try:
-                font = ImageFont.truetype("arialbd.ttf", 48)
+                font_path = os.path.join(os.path.dirname(__file__), "arialbd.ttf")
+                font = ImageFont.truetype(font_path, 48)
+
             except:
                 font = ImageFont.load_default()
 
