@@ -1,0 +1,11 @@
+{
+  "author": ["Zanidom"],
+  "install_msg": "Thanks for installing the Bounties cog! Use /bountyconfig to configure audit/board channels and bounty creation cost. Then sync slash commands per RedBot's guidance.",
+  "name": "Bounties",
+  "short": "Buyer-driven bounty board with escrow payouts.",
+  "description": "Adds /bounty commands to create, browse, and fulfil bounties on a per-server basis.",
+  "tags": ["economy", "bounty", "board", "escrow"],
+  "requirements": [],
+  "min_bot_version": "3.5.0",
+  "end_user_data_statement": "This cog stores bounty data per server: titles/descriptions/rewards, user IDs of posters/applicants/accepted users, and optional message IDs for the bounty board."
+}
