@@ -393,7 +393,7 @@ class BetterTickets(commands.Cog):
         if not cases:
             raise TicketError("No cases configured.")
 
-        description_lines = ["Click a button below to open a support ticket:"]
+        description_lines = ["Click a button below to open a support ticket:\n"]
         for case_key, data in list(cases.items())[:25]:
             emoji = data.get("emoji") or ""
             title = data.get("title") or case_key
