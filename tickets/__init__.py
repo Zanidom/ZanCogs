@@ -1,6 +1,5 @@
-from .reacttickets import ReactTickets
+from .bettertickets import BetterTickets
 
 async def setup(bot):
-    cog = ReactTickets(bot)
+    cog = BetterTickets(bot)
     await bot.add_cog(cog)
-    await cog.initialize()
