@@ -35,6 +35,6 @@ def build_bounty_embed(guild: discord.Guild, bounty: dict[str, Any]) -> discord.
             for uid, st in accepted.items():
                 lines.append(f"<@{uid}>")
             e.add_field(name="Accepted", value="\n".join(lines)[:1024], inline=False)
-
-    e.set_footer(text="Use /bounty view to show one bounty, or /bounty board to browse.")
+    footerPart2 = "" if bounty.get("open_fulfil") else "\nUse /bounty apply {bounty['id']} to apply for this bounty."
+    e.set_footer(text=f"Use /bounty view to show one bounty, or /bounty board to browse.{footerPart2}")
     return e

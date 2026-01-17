@@ -1,6 +1,6 @@
 {
   "author": ["Zanidom"],
-  "install_msg": "Thanks for installing the Bounties cog! Use /bountyconfig to configure audit/board channels and bounty creation cost. Then sync slash commands per RedBot's guidance.",
+  "install_msg": "Thanks for installing Zan's Bounties cog! Use /bountyconfig to configure audit/board channels and bounty creation cost. Then sync slash commands per RedBot's guidance.",
   "name": "Bounties",
   "short": "Buyer-driven bounty board with escrow payouts.",
   "description": "Adds /bounty commands to create, browse, and fulfil bounties on a per-server basis.",
