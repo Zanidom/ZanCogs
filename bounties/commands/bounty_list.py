@@ -21,7 +21,7 @@ def register(bounty_group: app_commands.Group, cog):
         for b in bounties:
             owner = interaction.guild.get_member(b["owner_id"])
             owner_name = owner.display_name if owner else str(b["owner_id"])
-            lines.append(f"#{b['id']} — “{b['title']}” — {owner_name}")
+            lines.append(f"#{b['id']} - “{b['title']}” - {owner_name}")
 
         chunks = []
         cur = ""

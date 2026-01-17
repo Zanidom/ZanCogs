@@ -262,7 +262,7 @@ class BetterTickets(commands.Cog):
         lines = []
         for k, v in cases.items():
             e = v.get("emoji") or ""
-            lines.append(f"- `{k}` {e} **{v.get('title','')}** — {v.get('desc','')}")
+            lines.append(f"- `{k}` {e} **{v.get('title','')}** - {v.get('desc','')}")
         await ctx.send("\n".join(lines))
 
     @tickets.command(name="setmsg")
@@ -398,7 +398,7 @@ class BetterTickets(commands.Cog):
             emoji = data.get("emoji") or ""
             title = data.get("title") or case_key
             desc = data.get("desc") or ""
-            description_lines.append(f"{emoji} **{title}** — {desc}")
+            description_lines.append(f"{emoji} **{title}** - {desc}")
 
         embed = discord.Embed(
             colour=discord.Colour.from_rgb(255, 255, 255),

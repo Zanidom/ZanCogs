@@ -181,7 +181,7 @@ class Bounties(commands.Cog):
                     m = interaction.guild.get_member(int(uid))
                     if m:
                         try:
-                            await m.send(f"Bounty #{bounty['id']} — {bounty['title']} was updated; you were unaccepted and escrow was refunded.")
+                            await m.send(f"Bounty #{bounty['id']} - {bounty['title']} was updated; you were unaccepted and escrow was refunded.")
                         except Exception:
                             pass
 

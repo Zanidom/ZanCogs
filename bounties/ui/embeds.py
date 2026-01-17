@@ -8,7 +8,7 @@ def build_bounty_embed(guild: discord.Guild, bounty: dict[str, Any]) -> discord.
     owner_name = owner.display_name if owner else f"<@{bounty['owner_id']}>"
 
     e = discord.Embed(
-        title=f"#{bounty['id']} — {bounty['title']}",
+        title=f"#{bounty['id']} - {bounty['title']}",
         description=(bounty.get("desc") or "")[:4000],
     )
     e.add_field(name="Reward", value=str(bounty["reward"]), inline=True)

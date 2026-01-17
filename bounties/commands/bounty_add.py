@@ -45,5 +45,5 @@ def register(bounty_group: app_commands.Group, cog):
             await interaction.response.send_message("You have no active bounties.", ephemeral=True, view=CloseView())
             return
 
-        text = "\n".join(f"#{b['id']} — {b['title']} (remaining payouts: {b['max_payouts']})" for b in mine)[:1900]
+        text = "\n".join(f"#{b['id']} - {b['title']} (remaining payouts: {b['max_payouts']})" for b in mine)[:1900]
         await interaction.response.send_message(text, ephemeral=True, view=CloseView())

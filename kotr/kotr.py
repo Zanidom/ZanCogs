@@ -544,7 +544,7 @@ class Kotr(commands.Cog):
 
             page_title = f"Available colours - Page {self.page + 1}/{self._page_count()}"
             embed = discord.Embed(title=page_title, colour=discord.Colour.blurple())
-            embed.description = "\n".join([f"**{n}** — `#{v:06X}`" for n, v in slice_items]) or "No colours configured."
+            embed.description = "\n".join([f"**{n}** - `#{v:06X}`" for n, v in slice_items]) or "No colours configured."
 
             if self.message is None:
                 if self.ephemeral and getattr(self.ctx, "interaction", None):
@@ -748,7 +748,7 @@ class Kotr(commands.Cog):
         for idx, (uid, seconds) in enumerate(totals[:top], start=1):
             member = guild.get_member(uid) or await self.bot.fetch_user(uid)
             name = getattr(member, "display_name", getattr(member, "name", str(uid)))
-            lines.append(f"**{idx}.** {name} — {human_timedelta(seconds)}")
+            lines.append(f"**{idx}.** {name} - {human_timedelta(seconds)}")
 
         if not lines:
             await ctx.send("No ownership data yet.")

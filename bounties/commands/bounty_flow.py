@@ -44,7 +44,7 @@ def register(bounty_group: app_commands.Group, cog):
         if owner:
             await cog._try_dm(
                 user=owner,
-                content=f"{interaction.user.mention} applied for your bounty #{bounty['id']} — {bounty['title']}."
+                content=f"{interaction.user.mention} applied for your bounty #{bounty['id']} - {bounty['title']}."
             )
 
         await interaction.response.send_message("Applied.", ephemeral=True)
@@ -94,7 +94,7 @@ def register(bounty_group: app_commands.Group, cog):
 
         if not await cog.econ.can_spend(owner, reward):
             await interaction.response.send_message(
-                "You cannot accept people for this bounty — it's currently too expensive for you.",
+                "You cannot accept people for this bounty - it's currently too expensive for you.",
                 ephemeral=True,
             )
             return
@@ -107,7 +107,7 @@ def register(bounty_group: app_commands.Group, cog):
 
         await cog._try_dm(
             user=user,
-            content=f"You were accepted for bounty #{bounty['id']} — {bounty['title']}. Use /bounty fulfil {bounty['id']} when done."
+            content=f"You were accepted for bounty #{bounty['id']} - {bounty['title']}. Use /bounty fulfil {bounty['id']} when done."
         )
 
         await cog._commit(interaction.guild, bounty, audit_text=f"<@{interaction.user.id}> accepted <@{user.id}> for bounty #{bounty['id']} (escrowed)")
@@ -139,7 +139,7 @@ def register(bounty_group: app_commands.Group, cog):
 
         await cog._try_dm(
             user=user,
-            content=f"You were declined for bounty #{bounty['id']} — {bounty['title']}."
+            content=f"You were declined for bounty #{bounty['id']} - {bounty['title']}."
         )
 
         await cog._commit(interaction.guild, bounty, audit_text=f"<@{interaction.user.id}> declined <@{user.id}> for bounty #{bounty['id']}")
@@ -182,7 +182,7 @@ def register(bounty_group: app_commands.Group, cog):
         
         await cog._try_dm(
             user=user,
-            content=f"You were unaccepted for bounty #{bounty['id']} — {bounty['title']}."
+            content=f"You were unaccepted for bounty #{bounty['id']} - {bounty['title']}."
         )
 
         await cog._commit(interaction.guild, bounty, audit_text=f"↩️ <@{interaction.user.id}> unaccepted <@{user.id}> for bounty #{bounty['id']} (refund)")
@@ -222,7 +222,7 @@ def register(bounty_group: app_commands.Group, cog):
         if owner:
             await cog._try_dm(
                 user=owner,
-                content=f"{interaction.user.mention} marked fulfilment for bounty #{bounty['id']} — {bounty['title']}."
+                content=f"{interaction.user.mention} marked fulfilment for bounty #{bounty['id']} - {bounty['title']}."
             )
 
         await cog._commit(interaction.guild, bounty, audit_text=f"<@{interaction.user.id}> marked fulfilment for bounty #{bounty['id']}")
