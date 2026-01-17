@@ -18,7 +18,7 @@ class PunishmentModal(Modal, title="Punishment"):
 
         self.desc = TextInput(label="Descriptor",style=discord.TextStyle.paragraph,max_length=MAX_TEXT_LEN,
             required=True,default=default_text[:MAX_TEXT_LEN],placeholder="e.g. Take a pie to the face",)
-        self.weight = TextInput(label=f"Weight ({WEIGHT_MIN}-{WEIGHT_MAX}) (higher weight, more likely to be rolled)",style=discord.TextStyle.short,
+        self.weight = TextInput(label=f"Weight ({WEIGHT_MIN}-{WEIGHT_MAX}) (more weight, more likely)",style=discord.TextStyle.short,
             max_length=3, required=True, default=str(default_weight)[:3], placeholder="1",)
 
         self.add_item(self.desc)
