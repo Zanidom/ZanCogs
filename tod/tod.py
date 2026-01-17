@@ -7,6 +7,7 @@ from copy import copy
 import traceback
 from typing import Dict, Optional, Any
 from redbot.core import commands, Config
+import asyncio
 
 class GameMode(Enum):
     GameMode_Round = 1
@@ -622,7 +623,7 @@ class ToDView(discord.ui.View):
         playerOrChooser = None
         playerOrChooserType = None
         gameState = ToDCog.GetSkippedState(self.channel)
-        await ToDCog.TryClearWasSkipped()
+        await ToDCog.TryClearWasSkipped(self.channel)
         try:
             if gameState == GameState.CHOOSING_PLAYER or gameState == GameState.WAITING_FOR_PLAYER:
                 playerOrChooser = ToDCog.GetCurrentToDTarget(self.channel)
@@ -733,7 +734,6 @@ class ToDGame:
         self.gameView = ToDView(self.channel, timeout)
         await self.gameView.CreateView()
         await self.gameView.StartView(self.channel)
-        await self.gameView.wait()
 
     async def EndGame(self):
         print('EndGame')
@@ -848,28 +848,31 @@ class ToDGame:
             await self.OnStateChange()
 
     async def CheckSkip(self):
-        print('CheckSkip')
-        areWeSkipping = len(self.skip_votes) >= (len(self.players) * 0.499)
-        if (areWeSkipping):
-            print("Skipping confirmed")
-            self.wasSkipped = True
-            self.skip_votes.clear()
-            self.stateOnSkip = self.state
-            match self.state:
-                case GameState.WAITING_FOR_PLAYER:
-                    self.state = GameState.INPUT_COMPLETE   #reset to choose a player
-                    await self.OnStateChange()
-                case GameState.PLAYER_HAS_CHOSEN_AWAITING_INPUT:
-                    if self.game_mode == GameMode.GameMode_Chaos:
-                        self.state = GameState.INPUT_COMPLETE
-                    await self.OnStateChange()
-                case GameState.INPUT_GIVEN:
-                    self.state = GameState.INPUT_COMPLETE
-                    await self.OnStateChange()
-                case _:
-                    return False
-            return True   #returns true if half+ voted to skip
+        required = (len(self.players) + 1) // 2
+        if len(self.skip_votes) < required:
+            return False
+
+        self.wasSkipped = True
+        self.skip_votes.clear()
+        self.stateOnSkip = self.state
+
+        try:
+            await self.gameView.MakeInert()
+        except:
+            pass
+
+        if self.state in (GameState.WAITING_FOR_PLAYER, GameState.INPUT_GIVEN):
+            self.state = GameState.INPUT_COMPLETE
+            await self.OnStateChange()
+            return True
+
+        if self.state == GameState.PLAYER_HAS_CHOSEN_AWAITING_INPUT:
+            self.state = GameState.INPUT_COMPLETE
+            await self.OnStateChange()
+            return True
+
         return False
+
 
     async def EvaluateGameEnd(self):
         print('EvaluateGameEnd')
@@ -1130,14 +1133,13 @@ class ToDCog(commands.Cog):
         return ToDLeaveResponse.SuccessfulLeave
 
     @classmethod
-    async def TryClearWasSkipped(self, channel:discord.TextChannel):
-        print('TryClearWasSkipped')
+    async def TryClearWasSkipped(self, channel: discord.TextChannel):
         try:
             game = self.games[channel.id]
         except:
-            await channel.send("Something went wrong with the game mode.")
             return False
         game.wasSkipped = False
+        return True
 
     @classmethod
     async def TryNextGameMode(self, channel:discord.TextChannel, player:discord.User):
@@ -1211,7 +1213,8 @@ class ToDCog(commands.Cog):
     async def TryEndGame(self, channel:discord.TextChannel):
         print('TryEndGame')
         await self.games[channel.id].EndGame()
-        time.sleep(1)
+        await asyncio.sleep(1)
+
         try:
             del self.games[channel.id]
         except:
