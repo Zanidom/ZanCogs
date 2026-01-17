@@ -46,7 +46,7 @@ class PunishmentModal(Modal, title="Punishment"):
         if self.edit_id is None:
             return await interaction.response.send_message("Internal error: missing edit id. @ Zan to investigate", ephemeral=True)
 
-        ok = await self.cog._edit_punishment(self.target, text=text, weight=weight)
+        ok = await self.cog._edit_punishment(self.target, punishId=self.edit_id, text=text, weight=weight)
         if not ok:
             return await interaction.response.send_message(
                 f"Couldn't find punishment **#{self.edit_id}** for {self.target.mention}.", ephemeral=True,)
