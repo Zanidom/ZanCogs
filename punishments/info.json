@@ -1,0 +1,9 @@
+{
+  "author": [ "Zan" ],
+  "install_msg": "Thank you for installing Zan's Punishments cog!",
+  "name": "Punishments",
+  "short": "Lets you punish folk",
+  "description": "Lets you set up rules and punishments, and punish other Discord members",
+  "tags": [ "Rules", "Punishments"],
+  "end_user_data_statement": "This cog stores provided information at the discretion of each user. This can be freely deleted."
+}
