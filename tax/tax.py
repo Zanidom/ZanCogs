@@ -41,7 +41,7 @@ class Tax(commands.Cog):
 
         balance = await bank.get_balance(member)
         if tax_amount > balance:
-            return await ctx.send(f"{member.display_name} doesn’t have enough {currency}.")
+            return await ctx.send(f"{member.display_name} doesn't have enough {currency}.")
 
         await bank.withdraw_credits(member, tax_amount)
 

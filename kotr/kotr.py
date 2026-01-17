@@ -512,7 +512,7 @@ class Kotr(commands.Cog):
             self.add_item(b_prev)
             self.add_item(b_next)
 
-            content = f"Pick a colour • Page {self.page + 1}/{self._page_count()}"
+            content = f"Pick a colour - Page {self.page + 1}/{self._page_count()}"
             await self._ensure_main_message(content, view=self)
 
             files: List[discord.File] = []
@@ -542,7 +542,7 @@ class Kotr(commands.Cog):
             self.add_item(b_prev)
             self.add_item(b_next)
 
-            page_title = f"Available colours • Page {self.page + 1}/{self._page_count()}"
+            page_title = f"Available colours - Page {self.page + 1}/{self._page_count()}"
             embed = discord.Embed(title=page_title, colour=discord.Colour.blurple())
             embed.description = "\n".join([f"**{n}** — `#{v:06X}`" for n, v in slice_items]) or "No colours configured."
 
@@ -601,7 +601,7 @@ class Kotr(commands.Cog):
             self.add_item(b_prev)
             self.add_item(b_next)
 
-            content = f"Pick a title • Page {self.page + 1}/{self._page_count()}"
+            content = f"Pick a title - Page {self.page + 1}/{self._page_count()}"
             await self._ensure_main_message(content, view=self)
 
 
@@ -642,7 +642,7 @@ class Kotr(commands.Cog):
             self.add_item(b_prev)
             self.add_item(b_next)
 
-            content = f"Pick an icon • Page {self.page + 1}/{self._page_count()}"
+            content = f"Pick an icon - Page {self.page + 1}/{self._page_count()}"
             await self._ensure_main_message(content, view=self)
 
     @kotr.command(name="setcolour")
@@ -786,7 +786,7 @@ class Kotr(commands.Cog):
         titleList = sorted(titleList)
 
         embed = discord.Embed(title="Available titles", colour=discord.Colour.blurple())
-        embed.description = "\n".join(f"• {t}" for t in titleList) or "None configured." 
+        embed.description = "\n".join(f"- {t}" for t in titleList) or "None configured." 
         await ctx.send(embed=embed)
 
     @commands.group(no_pm=True, pass_context=True)

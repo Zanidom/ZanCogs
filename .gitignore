@@ -1,4 +1,4 @@
-*/__pycache__/
+*__pycache__*
 arblist/__init__.py
 arblist/arblist.py
 arblist/info.json
