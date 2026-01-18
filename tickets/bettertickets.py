@@ -67,21 +67,35 @@ class TicketCaseButton(discord.ui.Button):
 
 
 class TicketControlsView(discord.ui.View):
-    """View posted inside each ticket channel."""
     def __init__(self, cog: "BetterTickets", guild_id: int, user_id: int):
         super().__init__(timeout=None)
         self.cog = cog
         self.guild_id = guild_id
         self.user_id = user_id
 
-    @discord.ui.button(
-        label="Close",
-        style=discord.ButtonStyle.danger,
-        emoji="🔒",
-        custom_id="bticket:close",
-    )
-    async def close(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.add_item(
+            TicketCloseButton(
+                guild_id=guild_id,
+                user_id=user_id,
+                cog=cog,
+            )
+        )
+
+
+class TicketCloseButton(discord.ui.Button):
+    def __init__(self, guild_id: int, user_id: int, cog: "BetterTickets"):
+        super().__init__(
+            label="Close",
+            style=discord.ButtonStyle.danger,
+            emoji="🔒",
+            custom_id=f"bticket:close:{guild_id}:{user_id}",
+        )
+        self.cog = cog
+        self.user_id = user_id
+
+    async def callback(self, interaction: discord.Interaction):
         await self.cog.handle_close(interaction, self.user_id)
+
 
 
 class BetterTickets(commands.Cog):
@@ -117,6 +131,32 @@ class BetterTickets(commands.Cog):
     async def cog_load(self):
         for guild in self.bot.guilds:
             await self._ensure_panel_view(guild)
+            await self._ensure_ticket_views(guild)
+
+    async def _ensure_ticket_views(self, guild: discord.Guild):
+        active = await self.config.guild(guild).active()
+        for user_id_str, record in list(active.items()):
+            ch = guild.get_channel(record.get("channel_id", 0))
+            msg_id = record.get("control_msg_id")
+            if not isinstance(ch, discord.TextChannel) or not msg_id:
+                continue
+
+            # If the message no longer exists, clean stale record
+            try:
+                await ch.fetch_message(msg_id)
+            except discord.NotFound:
+                active.pop(user_id_str, None)
+                continue
+            except discord.Forbidden:
+                continue
+            except discord.HTTPException:
+                continue
+
+            view = TicketControlsView(self, guild.id, int(user_id_str))
+            self.bot.add_view(view, message_id=msg_id)
+
+        await self.config.guild(guild).active.set(active)
+
 
     async def _ensure_panel_view(self, guild: discord.Guild):
         enabled = await self.config.guild(guild).enabled()
@@ -530,6 +570,15 @@ class BetterTickets(commands.Cog):
         embed.set_footer(text=f"{user} ({user.id})")
 
         controls = TicketControlsView(self, guild.id, user.id)
+        msg = await ticket_channel.send(content=user_message, embed=embed, view=controls)
+        
+        active[str(user.id)] = {
+            "channel_id": ticket_channel.id,
+            "manager_msg_id": manager_msg_id,
+            "control_msg_id": msg.id,
+            "case_key": case_key,
+        }
+        await self.config.guild(guild).active.set(active)
         await ticket_channel.send(content=user_message, embed=embed, view=controls)
 
         mgmt_channel = guild.get_channel(settings["management_channel_id"])
