@@ -649,8 +649,6 @@ class BetterTickets(commands.Cog):
 
         settings = await self.config.guild(guild).all()
         support_role = guild.get_role(settings["support_role_id"]) if settings["support_role_id"] else None
-        if not support_role or support_role not in staff.roles:
-            return await interaction.followup.send("Only support staff can close tickets.", ephemeral=True)
 
         active = await self.config.guild(guild).active()
         record = active.get(str(target_user_id))
