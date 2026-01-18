@@ -603,7 +603,7 @@ class BetterTickets(commands.Cog):
 
         #Send ticket message ONCE, capture control message id
         controls = TicketControlsView(self, guild.id, user.id)
-        control_msg = await ticket_channel.send(content=user_message, embed=embed, view=controls)
+        control_msg = await ticket_channel.send(content=user_message, embed=embed, view=controls, allowed_mentions=discord.AllowedMentions.all())
 
         #Create management log message and capture id
         manager_msg_id = 0
