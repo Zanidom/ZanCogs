@@ -6,7 +6,7 @@ import discord
 from redbot.core import Config, checks, commands, app_commands
 from redbot.core.bot import Red
 from redbot.core.utils import AsyncIter
-
+import traceback
 
 def utcnow():
     return datetime.datetime.now(datetime.timezone.utc)
@@ -95,7 +95,15 @@ class TicketCloseButton(discord.ui.Button):
         self.user_id = user_id
 
     async def callback(self, interaction: discord.Interaction):
-        await self.cog.handle_close(interaction, self.user_id)
+        try:
+            await self.cog.handle_close(interaction, self.user_id)
+        except Exception:
+            print("Close button error:")
+            traceback.print_exc()
+            if interaction.response.is_done():
+                await interaction.followup.send("An error occurred. Staff: check logs.", ephemeral=True)
+            else:
+                await interaction.response.send_message("An error occurred. Staff: check logs.", ephemeral=True)
 
 
 
