@@ -187,7 +187,6 @@ class BetterTickets(commands.Cog):
     def format_help_for_context(self, ctx: commands.Context) -> str:
         return f"{super().format_help_for_context(ctx)}\n\nVersion: {self.__version__}"
 
-
     @commands.group()
     @commands.guild_only()
     @checks.admin()
@@ -503,14 +502,17 @@ class BetterTickets(commands.Cog):
             return await interaction.response.send_message("That ticket type no longer exists.", ephemeral=True)
 
         active = await self.config.guild(guild).active()
+
+        #Existing active ticket?
         if str(user.id) in active:
-            ch_id = active[str(user.id)]["channel_id"]
-            ch = guild.get_channel(ch_id)
-            if ch:
+            ch_id = active[str(user.id)].get("channel_id")
+            ch = guild.get_channel(ch_id) if ch_id else None
+            if isinstance(ch, discord.TextChannel):
                 return await interaction.response.send_message(
-                    f"You already have an open ticket: {ch.mention}", ephemeral=True
+                    f"You already have an open ticket: {ch.mention}",
+                    ephemeral=True,
                 )
-            
+            #stale record
             active.pop(str(user.id), None)
             await self.config.guild(guild).active.set(active)
 
@@ -544,9 +546,8 @@ class BetterTickets(commands.Cog):
             ),
         }
 
-        channelname = f"open-{user.id}"
         ticket_channel = await guild.create_text_channel(
-            name=channelname,
+            name=f"open-{user.id}",
             overwrites=overwrites,
             category=open_category,
             topic=reason_title,
@@ -554,6 +555,7 @@ class BetterTickets(commands.Cog):
             reason=f"Ticket opened by {user} ({user.id})",
         )
 
+        #Build user-facing message
         case_messages = await self.config.guild(guild).case_messages()
         custom_message = case_messages.get(case_key, "")
         user_message = f"{user.mention}, a staff member will be with you shortly."
@@ -569,18 +571,12 @@ class BetterTickets(commands.Cog):
             embed.set_thumbnail(url=user.avatar.url)
         embed.set_footer(text=f"{user} ({user.id})")
 
+        #Send ticket message ONCE, capture control message id
         controls = TicketControlsView(self, guild.id, user.id)
-        msg = await ticket_channel.send(content=user_message, embed=embed, view=controls)
-        
-        active[str(user.id)] = {
-            "channel_id": ticket_channel.id,
-            "manager_msg_id": manager_msg_id,
-            "control_msg_id": msg.id,
-            "case_key": case_key,
-        }
-        await self.config.guild(guild).active.set(active)
-        await ticket_channel.send(content=user_message, embed=embed, view=controls)
+        control_msg = await ticket_channel.send(content=user_message, embed=embed, view=controls)
 
+        #Create management log message and capture id
+        manager_msg_id = 0
         mgmt_channel = guild.get_channel(settings["management_channel_id"])
         if isinstance(mgmt_channel, discord.TextChannel):
             m_embed = discord.Embed(
@@ -590,49 +586,54 @@ class BetterTickets(commands.Cog):
             )
             if user.avatar:
                 m_embed.set_thumbnail(url=user.avatar.url)
+
             manager_msg = await mgmt_channel.send(
                 content=f"User: {user.mention}\nChannel: {ticket_channel.mention}",
                 embed=m_embed,
             )
-            
             m_embed.set_footer(text=f"Message ID: {manager_msg.id}")
             await manager_msg.edit(embed=m_embed)
             manager_msg_id = manager_msg.id
-        else:
-            manager_msg_id = 0
 
+        #Persist active record ONCE, including control_msg_id
         active[str(user.id)] = {
             "channel_id": ticket_channel.id,
             "manager_msg_id": manager_msg_id,
+            "control_msg_id": control_msg.id,
             "case_key": case_key,
         }
         await self.config.guild(guild).active.set(active)
 
+        #Ack interaction
         await interaction.response.send_message(f"Ticket created: {ticket_channel.mention}", ephemeral=True)
+
 
     async def handle_close(self, interaction: discord.Interaction, target_user_id: int):
         if not interaction.guild or not isinstance(interaction.user, discord.Member):
             return
+    
+        await interaction.response.defer(ephemeral=True)
+
         guild = interaction.guild
         staff = interaction.user
 
         settings = await self.config.guild(guild).all()
         support_role = guild.get_role(settings["support_role_id"]) if settings["support_role_id"] else None
         if not support_role or support_role not in staff.roles:
-            return await interaction.response.send_message("Only support staff can close tickets.", ephemeral=True)
+            return await interaction.followup.send("Only support staff can close tickets.", ephemeral=True)
 
         active = await self.config.guild(guild).active()
         record = active.get(str(target_user_id))
         if not record:
-            return await interaction.response.send_message("This ticket is no longer tracked as active.", ephemeral=True)
+            return await interaction.followup.send("This ticket is no longer tracked as active.", ephemeral=True)
 
         if interaction.channel_id != record["channel_id"]:
-            return await interaction.response.send_message("That close button isn't for this channel.", ephemeral=True)
+            return await interaction.followup.send("That close button isn't for this channel.", ephemeral=True)
 
         ch = guild.get_channel(record["channel_id"])
         closed_category = guild.get_channel(settings["closed_category_id"]) if settings["closed_category_id"] else None
         if not isinstance(ch, discord.TextChannel) or not isinstance(closed_category, discord.CategoryChannel):
-            return await interaction.response.send_message("Ticket channel/category is invalid.", ephemeral=True)
+            return await interaction.followup.send("Ticket channel/category is invalid.", ephemeral=True)
 
         overwrites = {
             guild.default_role: discord.PermissionOverwrite(read_messages=False),
@@ -666,7 +667,8 @@ class BetterTickets(commands.Cog):
 
         await self._append_management_state(guild, record.get("manager_msg_id"), "Closed", f"by {staff.mention}")
 
-        await interaction.response.send_message("Closed.", ephemeral=True)
+        await interaction.followup.send("Closed.", ephemeral=True)
+
 
     async def _append_management_state(self, guild: discord.Guild, manager_msg_id: int, state: str, text: str):
         if not manager_msg_id:
