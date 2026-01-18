@@ -138,18 +138,26 @@ class BetterTickets(commands.Cog):
         )
 
     async def cog_load(self):
-        for guild in self.bot.guilds:
-            await self._ensure_panel_view(guild)
-            await self._ensure_ticket_views(guild)
+        #schedule restore after the bot is actually ready
+        if self._restore_task is None or self._restore_task.done():
+            self._restore_task = asyncio.create_task(self._restore_views_when_ready())
 
-            
-    @commands.Cog.listener()
-    async def on_ready(self):
-        if self._views_loaded:
+    async def cog_unload(self):
+        if self._restore_task and not self._restore_task.done():
+            self._restore_task.cancel()
+
+    async def _restore_views_when_ready(self):
+        if hasattr(self.bot, "wait_until_red_ready"):
+            await self.bot.wait_until_red_ready()
+        else:
+            await self.bot.wait_until_ready()
+
+        #on_ready can fire multiple times; prevent double-registration
+        if self._views_restored:
             return
-        self._views_loaded = True
+        self._views_restored = True
 
-        async for guild in AsyncIter(self.bot.guilds):
+        for guild in self.bot.guilds:
             await self._ensure_panel_view(guild)
             await self._ensure_ticket_views(guild)
 
