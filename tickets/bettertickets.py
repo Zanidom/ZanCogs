@@ -5,6 +5,7 @@ import typing
 import discord
 from redbot.core import Config, checks, commands, app_commands
 from redbot.core.bot import Red
+from redbot.core.utils import AsyncIter
 
 
 def utcnow():
@@ -103,7 +104,7 @@ class BetterTickets(commands.Cog):
     Button-based support tickets with additional custom cases.
     """
 
-    __version__ = "2.0.0"
+    __version__ = "2.0.3"
 
     def __init__(self, bot: Red):
         self.bot = bot
@@ -130,6 +131,17 @@ class BetterTickets(commands.Cog):
 
     async def cog_load(self):
         for guild in self.bot.guilds:
+            await self._ensure_panel_view(guild)
+            await self._ensure_ticket_views(guild)
+
+            
+    @commands.Cog.listener()
+    async def on_ready(self):
+        if self._views_loaded:
+            return
+        self._views_loaded = True
+
+        async for guild in AsyncIter(self.bot.guilds):
             await self._ensure_panel_view(guild)
             await self._ensure_ticket_views(guild)
 
