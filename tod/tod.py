@@ -756,15 +756,19 @@ class ToDGame:
         if self.current_player is not None:
             self.last_player = self.current_player
 
-        curSelList = copy(self.selection_list)
-        if len(curSelList) > 1:
+        pool = list(self.selection_list)
+        if self.last_player in pool and len(pool) > 1:
             try:
                 #handles the case where we start a new round and we've freshly repopulated our selection list
-                curSelList.remove(self.last_player)
+                pool.remove(self.last_player)
             except:
                 pass
+        
+        if not pool:
+           pool = list(self.players)  # fallback
+
+        self.current_player = random.choice(pool)
         self.current_choice = ToDChoice.NoChoiceYet
-        self.current_player = random.choice(curSelList)
         self.state = GameState.WAITING_FOR_PLAYER
         await self.gameView.MakeInert()
         await self.OnStateChange()
@@ -772,7 +776,6 @@ class ToDGame:
 
 
     async def ChooseChooser(self):
-        print('ChooseChooser')
         choicePool = copy(self.players)
         choicePool.remove(self.current_player)
         self.current_chooser = random.choice(choicePool)
@@ -872,7 +875,6 @@ class ToDGame:
             return True
 
         return False
-
 
     async def EvaluateGameEnd(self):
         print('EvaluateGameEnd')
