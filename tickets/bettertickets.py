@@ -117,6 +117,8 @@ class BetterTickets(commands.Cog):
     def __init__(self, bot: Red):
         self.bot = bot
         self.config = Config.get_conf(self, identifier=5465324654986213156, force_registration=False)
+        self._restore_task: typing.Optional[asyncio.Task] = None
+        self._views_restored = False
 
         self.config.register_guild(
             panel_channel_id=None,
