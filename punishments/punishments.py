@@ -591,8 +591,9 @@ class Punishments(commands.Cog):
 
             chosen: list[dict[str, Any]] = []
             if allow_duplicates:
-                weights = [weight_of(item) for item in items if item.get("enabled" is True)]
+                weights = [weight_of(item) for item in items]
                 chosen = random.choices(items, weights=weights, k=rolls)
+
             else:
                 pool = items[:]
                 for _ in range(rolls):
