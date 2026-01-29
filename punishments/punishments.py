@@ -573,7 +573,7 @@ class Punishments(commands.Cog):
             if not isinstance(target, discord.Member):
                 return await interaction.response.send_message("That user isn't in this server.", ephemeral=True)
 
-            items = await self._get_punishments(target)
+            items = await self._get_enabled_punishments(target)
             if not items:
                 return await interaction.response.send_message(f"{target.mention} has no enabled punishments. Use `/punishment add`.", ephemeral=True, allowed_mentions=discord.AllowedMentions.none())
 
