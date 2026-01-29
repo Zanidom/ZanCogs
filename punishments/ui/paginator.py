@@ -38,3 +38,11 @@ class EmbedPaginator(View):
         self.index = min(len(self.embeds) - 1, self.index + 1)
         self._sync_buttons()
         await interaction.response.edit_message(embed=self.embeds[self.index], view=self)
+
+    async def on_timeout(self):
+        try:
+            if self.message:
+                await self.message.edit(view=None)
+        except (discord.NotFound, discord.HTTPException):
+            pass
+

@@ -262,6 +262,8 @@ class Punishments(commands.Cog):
             embeds = self._embeds_from_lines(title="Punishments Help", lines=lines, footer="Punishments")
             view = EmbedPaginator(embeds, author_id=interaction.user.id, timeout=PAGINATOR_TIMEOUT)
             await interaction.response.send_message(embed=embeds[0], view=view, ephemeral=True)
+            view.message = await interaction.original_response()
+
 
         @self.punishment_group.command(name="clone", description="Clone your punishments/rules from another server into this one (OVERWRITES!!!).")
         @app_commands.describe(from_server_id="Server ID to copy FROM (source). Run this command in the server you want to copy INTO.")
@@ -387,10 +389,12 @@ class Punishments(commands.Cog):
                 return await interaction.response.send_message(msg, ephemeral=(not public), allowed_mentions=discord.AllowedMentions.none())
 
             lines = [self._format_punishment_line(item) for item in items]
-            embeds = self._embeds_from_lines(title=f"Punishments for {target}", lines=lines, footer="ChatRules")
+            embeds = self._embeds_from_lines(title=f"Punishments for {target}", lines=lines, footer="Punishment List")
             view = EmbedPaginator(embeds, author_id=interaction.user.id, timeout=PAGINATOR_TIMEOUT)
 
             await interaction.response.send_message(embed=embeds[0], view=view, ephemeral=not public, allowed_mentions=discord.AllowedMentions.none())
+            view.message = await interaction.original_response()
+
 
 
         @self.punishment_group.command(name="forgetme", description="Erase all your stored punishments/rules in this server.")
@@ -505,6 +509,8 @@ class Punishments(commands.Cog):
             embeds = self._embeds_from_lines(title="Rules Help", lines=lines, footer="ChatRules")
             view = EmbedPaginator(embeds, author_id=interaction.user.id, timeout=PAGINATOR_TIMEOUT)
             await interaction.response.send_message(embed=embeds[0], view=view, ephemeral=True)
+            view.message = await interaction.original_response()
+
 
         @self.rules_group.command(name="add", description="Add a rule to your list.")
         async def rules_add(interaction: discord.Interaction):
@@ -554,6 +560,8 @@ class Punishments(commands.Cog):
             embeds = self._embeds_from_lines(title=f"Rules for {target}", lines=lines, footer="ChatRules")
             view = EmbedPaginator(embeds, author_id=interaction.user.id, timeout=PAGINATOR_TIMEOUT)
             await interaction.response.send_message(embed=embeds[0], view=view, ephemeral=not public)
+            view.message = await interaction.original_response()
+
 
         @app_commands.command(name="punish", description="Roll punishments for a user.")
         @app_commands.describe(user="User to punish (defaults to you).",
