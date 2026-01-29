@@ -11,14 +11,34 @@ from redbot.core.bot import Red
 
 import io
 import csv
+import re
 
-from .constants import CONFIG_IDENTIFIER, MAX_LIST_LINES_PER_PAGE, MAX_ROLLS, WEIGHT_MAX, PAGINATOR_TIMEOUT, CLONE_CONFIRM_TIMEOUT
 
+from .constants import CONFIG_IDENTIFIER, MAX_LIST_LINES_PER_PAGE, MAX_ROLLS, WEIGHT_MAX, PAGINATOR_TIMEOUT, CLONE_CONFIRM_TIMEOUT, ID_SPLIT_RE
 from .ui.importer import ImportPunishmentsModal
 from .ui.paginator import EmbedPaginator
 from .ui.confirm import ConfirmView
 from .ui.modals import PunishmentModal, RuleModal
 
+
+#static func just because
+def _parse_ids(ids: str) -> list[int]: 
+    out: list[int] = []
+    for token in ID_SPLIT_RE.split(ids.strip()):
+        if not token:
+            continue
+        try:
+            out.append(int(token))
+        except ValueError:
+            continue
+    #preserve order, drop duplicates
+    seen = set()
+    deduped = []
+    for i in out:
+        if i not in seen:
+            seen.add(i)
+            deduped.append(i)
+    return deduped
 
 class Punishments(commands.Cog):
     """Cog for managing your own punishment table & chat rules."""
@@ -63,6 +83,10 @@ class Punishments(commands.Cog):
     async def _get_punishments(self, member: discord.Member) -> list[dict[str, Any]]:
         return list(await self.config.member(member).punishments())
 
+    async def _get_enabled_punishments(self, member: discord.Member) -> list[dict]:
+        items = await self._get_punishments(member)
+        return [it for it in items if it.get("enabled", True)]
+
     async def _get_rules(self, member: discord.Member) -> list[dict[str, Any]]:
         return list(await self.config.member(member).rules())
 
@@ -99,6 +123,23 @@ class Punishments(commands.Cog):
         await conf.punishments.set(items)
         await conf.next_punishment_id.set(next_id)
         return count
+
+    async def _set_punishments_enabled(self, member: discord.abc.User, guild_id: int, ids: list[int], enabled: bool):
+        conf = self.config.member_from_ids(guild_id, member.id)
+        items = list(await conf.punishments())
+
+        found = set()
+        for item in items:
+            punishId = int(item.get("id", -1))
+            if punishId in ids:
+                item["enabled"] = enabled
+                found.add(punishId)
+
+        if found:
+            await conf.punishments.set(items)
+
+        missing = [id for id in ids if id not in found]
+        return sorted(found), missing
 
     async def _bulk_add_punishments_with_weights(self, member: discord.Member, *, items: list[tuple[str, int]] ) -> list[int]:
         conf = self.config.member(member)
@@ -187,6 +228,13 @@ class Punishments(commands.Cog):
             embeds.append(embed)
         return embeds
 
+    def _format_punishment_line(self, item: dict) -> str:
+        text = discord.utils.escape_markdown(str(item.get("text", "")))
+        weight = item.get("weight", 1)
+        suffix = "" if item.get("enabled", True) else " *(disabled)*"
+        return f"**#{item['id']}** - {text} (w:{weight}){suffix}"
+
+
     def _build_app_commands(self) -> None:
         @self.punishment_group.command(name="help", description="Show punishment commands.")
         async def punishment_help(interaction: discord.Interaction):
@@ -195,6 +243,9 @@ class Punishments(commands.Cog):
                 "**/punishment edit <id>** - Edit an existing punishment.",
                 "**/punishment remove <id>** - Remove a punishment.",
                 "**/punishment list [user]** - List punishments.",
+                "**/punishment enable <ids>** - Enable punishments for given IDs (comma-separated list)",
+                "**/punishment disable <ids>** - Disable punishments for given IDs (comma-separated list)",
+
                 "",
                 "**/punishment rules help** - Show rules commands.",
                 "**/punishment rules add** - Add a rule.",
@@ -321,20 +372,26 @@ class Punishments(commands.Cog):
             await interaction.response.send_message(f"Removed punishment **#{id}**.", ephemeral=True, allowed_mentions=discord.AllowedMentions.none())
 
         @self.punishment_group.command(name="list", description="List punishments for a user.")
-        @app_commands.describe(user="User's to view (defaults to you).")
-        async def punishment_list(interaction: discord.Interaction, user: Optional[discord.Member] = None):
+        @app_commands.describe(user="Which user to view (defaults to you).", public="If true, posts publicly instead of ephemerally.", show_disabled="If True, additionally shows disabled punishments.")
+        async def punishment_list(interaction: discord.Interaction, user: Optional[discord.Member] = None, public: bool = False, show_disabled: bool = False):
             target = user or interaction.user
             if not isinstance(target, discord.Member):
-                return await interaction.response.send_message("That user isn't in this server.", ephemeral=True)
+                return await interaction.response.send_message("Couldn't find that user in this server.", ephemeral=True)
 
             items = await self._get_punishments(target)
-            if not items:
-                return await interaction.response.send_message(f"{target.mention} has no punishments yet.", ephemeral=True, allowed_mentions=discord.AllowedMentions.none())
+            if not show_disabled:
+                items = [item for item in items if item.get("enabled", True)]
 
-            lines = [f"**#{item['id']}** - {discord.utils.escape_markdown(str(item.get('text','')))} (w:{item.get('weight',1)})" for item in items]
+            if not items:
+                msg = (f"{target.mention} has no punishments yet." if show_disabled else f"{target.mention} has no enabled punishments.")
+                return await interaction.response.send_message(msg, ephemeral=(not public), allowed_mentions=discord.AllowedMentions.none())
+
+            lines = [self._format_punishment_line(item) for item in items]
             embeds = self._embeds_from_lines(title=f"Punishments for {target}", lines=lines, footer="ChatRules")
             view = EmbedPaginator(embeds, author_id=interaction.user.id, timeout=PAGINATOR_TIMEOUT)
-            await interaction.response.send_message(embed=embeds[0], view=view, ephemeral=True)
+
+            await interaction.response.send_message(embed=embeds[0], view=view, ephemeral=not public, allowed_mentions=discord.AllowedMentions.none())
+
 
         @self.punishment_group.command(name="forgetme", description="Erase all your stored punishments/rules in this server.")
         @app_commands.describe(export="Do you want an export of your data? Set this to True if so.")
@@ -405,6 +462,39 @@ class Punishments(commands.Cog):
             await conf.next_rule_id.set(1)
             forgetMeText = "I've DM'd you a CSV backup and erased your stored punishments/rules for this server." if export else "I've deleted all of your data."
             await interaction.followup.send(forgetMeText, ephemeral=True)
+
+        @self.punishment_group.command(name="disable", description="Disable one or more punishments so they can't be rolled.")
+        @app_commands.describe(ids="Punishment IDs (e.g. '1,2,3' or '1 2 3').")
+        async def punishment_disable(interaction: discord.Interaction, ids: str):
+            assert interaction.guild is not None
+            target = interaction.user 
+            parsed = _parse_ids(ids)
+            if not parsed:
+                return await interaction.response.send_message("No valid IDs found.", ephemeral=True)
+
+            found, missing = await self._set_punishments_enabled(target, interaction.guild.id, parsed, enabled=False)
+
+            msg = f"Disabled: {', '.join(f'#{i}' for i in found) if found else '(none)'}"
+            if missing:
+                msg += f"\nNot found: {', '.join(f'#{i}' for i in missing)}"
+            await interaction.response.send_message(msg, ephemeral=True)
+
+
+        @self.punishment_group.command(name="enable", description="Enable one or more punishments so they can be rolled again.")
+        @app_commands.describe(ids="Punishment IDs (e.g. '1,2,3' or '1 2 3').")
+        async def punishment_enable(interaction: discord.Interaction, ids: str):
+            target = interaction.user 
+            parsed = _parse_ids(ids)
+            if not parsed:
+                return await interaction.response.send_message("No valid IDs found.", ephemeral=True)
+
+            found, missing = await self._set_punishments_enabled(target, interaction.guild.id, parsed, enabled=True)
+
+            msg = f"Enabled: {', '.join(f'#{i}' for i in found) if found else '(none)'}"
+            if missing:
+                msg += f"\nNot found: {', '.join(f'#{i}' for i in missing)}"
+            await interaction.response.send_message(msg, ephemeral=True)
+
 
         @self.rules_group.command(name="help", description="Show rules commands.")
         async def rules_help(interaction: discord.Interaction):
@@ -477,7 +567,7 @@ class Punishments(commands.Cog):
 
             items = await self._get_punishments(target)
             if not items:
-                return await interaction.response.send_message(f"{target.mention} has no punishments yet. Use `/punishment add`.", ephemeral=True, allowed_mentions=discord.AllowedMentions.none())
+                return await interaction.response.send_message(f"{target.mention} has no enabled punishments. Use `/punishment add`.", ephemeral=True, allowed_mentions=discord.AllowedMentions.none())
 
             if not allow_duplicates and rolls > len(items):
                 return await interaction.response.send_message(f"Not enough punishments to roll {rolls} unique results (they have {len(items)}).", ephemeral=True)
@@ -493,7 +583,7 @@ class Punishments(commands.Cog):
 
             chosen: list[dict[str, Any]] = []
             if allow_duplicates:
-                weights = [weight_of(item) for item in items]
+                weights = [weight_of(item) for item in items if item.get("enabled" is True)]
                 chosen = random.choices(items, weights=weights, k=rolls)
             else:
                 pool = items[:]
@@ -539,7 +629,7 @@ class Punishments(commands.Cog):
         async def admin_punishment_remove(interaction: discord.Interaction, user: discord.Member, id: int):
             ok = await self._remove_punishment(user, pid=id)
             if not ok:
-                return await interaction.response.send_message(f"Couldn’t find punishment **#{id}** for {user.mention}.", ephemeral=True)
+                return await interaction.response.send_message(f"Couldn't find punishment **#{id}** for {user.mention}.", ephemeral=True)
 
             await interaction.response.send_message(f"Removed punishment **#{id}** for {user.mention}.", ephemeral=True, allowed_mentions=discord.AllowedMentions.none())
 
