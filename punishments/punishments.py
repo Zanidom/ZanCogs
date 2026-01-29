@@ -558,7 +558,7 @@ class Punishments(commands.Cog):
 
             lines = [f"**#{it['id']}** - {discord.utils.escape_markdown(str(it.get('text','')))}" for it in items]
             embeds = self._embeds_from_lines(title=f"Rules for {target}", lines=lines, footer="ChatRules")
-            view = EmbedPaginator(embeds, author_id=interaction.user.id, timeout=PAGINATOR_TIMEOUT)
+            view = EmbedPaginator(embeds, author_id=interaction.user.id, timeout=PAGINATOR_TIMEOUT, self_restriction=False)
             await interaction.response.send_message(embed=embeds[0], view=view, ephemeral=not public)
             view.message = await interaction.original_response()
 
