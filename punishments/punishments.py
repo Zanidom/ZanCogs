@@ -390,7 +390,7 @@ class Punishments(commands.Cog):
 
             lines = [self._format_punishment_line(item) for item in items]
             embeds = self._embeds_from_lines(title=f"Punishments for {target}", lines=lines, footer="Punishment List")
-            view = EmbedPaginator(embeds, author_id=interaction.user.id, timeout=PAGINATOR_TIMEOUT)
+            view = EmbedPaginator(embeds, author_id=interaction.user.id, timeout=PAGINATOR_TIMEOUT, self_restriction=False)
 
             await interaction.response.send_message(embed=embeds[0], view=view, ephemeral=not public, allowed_mentions=discord.AllowedMentions.none())
             view.message = await interaction.original_response()

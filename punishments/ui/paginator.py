@@ -2,11 +2,12 @@ import discord
 from discord.ui import View, Button
 
 class EmbedPaginator(View):
-    def __init__(self, embeds: list[discord.Embed], *, author_id: int, timeout: float = 120):
+    def __init__(self, embeds: list[discord.Embed], *, author_id: int, timeout: float = 120, self_restriction: bool = True):
         super().__init__(timeout=timeout)
         self.embeds = embeds
         self.author_id = author_id
         self.index = 0
+        self.restricted = self_restriction
 
         self.prev_btn = Button(label="Prev", style=discord.ButtonStyle.secondary)
         self.next_btn = Button(label="Next", style=discord.ButtonStyle.secondary)
@@ -24,7 +25,7 @@ class EmbedPaginator(View):
         self.next_btn.disabled = (self.index >= len(self.embeds) - 1)
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
-        if interaction.user and interaction.user.id == self.author_id:
+        if interaction.user and interaction.user.id == self.author_id and self.restricted:
             return True
         await interaction.response.send_message("This isn't for you!", ephemeral=True)
         return False
