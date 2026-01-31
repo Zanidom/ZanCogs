@@ -608,7 +608,7 @@ class Punishments(commands.Cog):
             embed = discord.Embed(title="Punishment Roll", description=f"{target.mention}\n\n" + "\n".join(lines))
             embed.set_footer(text=f"obey_weightings={obey_weightings} - allow_duplicates={allow_duplicates} - rolls={rolls}")
 
-            await interaction.response.send_message(embed=embed, ephemeral=False, allowed_mentions=discord.AllowedMentions(users=[target]))
+            await interaction.response.send_message(embed=embed, ephemeral=False, allowed_mentions=discord.AllowedMentions.all())
 
         @app_commands.default_permissions(manage_guild=True)
         @app_commands.checks.has_permissions(manage_guild=True)
