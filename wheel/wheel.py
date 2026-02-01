@@ -4,6 +4,7 @@ import math
 import random
 from dataclasses import dataclass
 from typing import List, Tuple
+import os
 
 import discord
 from redbot.core import commands
@@ -164,7 +165,8 @@ def _build_wheel_base(items: List[WheelItem], size: int, margin: int, rng: rando
 
     #Font, used this one for Zuko Counter before so it's on hand
     try:
-        font = ImageFont.truetype("arialbd.ttf", size=max(40, size // 10))
+        font_path = os.path.join(os.path.dirname(__file__), "arialbd.ttf")
+        font = ImageFont.truetype(font_path, 32)
     except Exception:
         font = ImageFont.load_default()
 
@@ -205,7 +207,7 @@ def _build_wheel_base(items: List[WheelItem], size: int, margin: int, rng: rando
         #Flip winding for labels, somehow it was tripping me up?!
         mid_label = (-mid_draw) % 360.0
         theta = math.radians(mid_label)
-        inner_r = radius * 0.60
+        inner_r = radius * 0.40
 
         tx = cx + inner_r * math.cos(theta)
         ty = cy - inner_r * math.sin(theta)  #(y-down corrected because ugh PIL)
@@ -254,8 +256,6 @@ def _build_wheel_base(items: List[WheelItem], size: int, margin: int, rng: rando
     draw.ellipse((cx - hub_r, cy - hub_r, cx + hub_r, cy + hub_r), fill=(30, 30, 30, 255), outline=(255, 255, 255, 80), width=2)
 
     return img, seg_ranges
-
-
 
 def _build_arrow_overlay(canvas_w: int, canvas_h: int, wheel_center: Tuple[int, int], wheel_radius: int) -> Image.Image:
     """
