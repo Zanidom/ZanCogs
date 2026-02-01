@@ -219,8 +219,8 @@ def _build_wheel_base(items: List[WheelItem], size: int, margin: int, rng: rando
         inner_r = radius * 0.60
 
         label = item.label
-        if len(label) > 24:
-            label = label[:23] + "…"
+        if len(label) > 20:
+            label = label[:19] + "…"
 
         label_jobs.append((tx, ty, label, rot, color))
 
