@@ -10,15 +10,14 @@ def register(bounty_group: app_commands.Group, cog):
     @bounty_group.command(name="add", description="Post a new bounty.")
     @app_commands.guild_only()
     async def add(interaction: discord.Interaction):
-        assert interaction.guild is not None
         if await cog._blocked(interaction):
             return
+        
         await interaction.response.send_modal(AddBountyModal(cog))
 
     @bounty_group.command(name="board", description="Browse bounties with next/prev buttons.")
     @app_commands.guild_only()
     async def board(interaction: discord.Interaction):
-        assert interaction.guild is not None
         if await cog._blocked(interaction):
             return
 
