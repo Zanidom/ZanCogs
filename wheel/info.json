@@ -1,0 +1,8 @@
+{
+  "author": [ "Zan (Zanidom)" ],
+    "short" : "Cog that makes a cool wheel gif for choices",
+    "description" : "Cog that makes a cool wheel gif for arbitrary choices. Lets you use weighting too!",
+    "name" : "WheelSpin",
+    "tags" : ["wheel", "random", "choices"],
+    "install_msg" : "Thank you for installing Zan's wheel spin cog!"
+}
