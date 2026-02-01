@@ -39,12 +39,7 @@ def _parse_items(tokens: List[str]) -> List[WheelItem]:
         #otherwise default weight 1
         items.append(WheelItem(label=token, weight=1))
 
-    #merge duplicates (optional but usually nice)
-    merged = {}
-    for it in items:
-        key = it.label
-        merged[key] = merged.get(key, 0) + it.weight
-    return [WheelItem(k, v) for k, v in merged.items()]
+    return [WheelItem(k, v) for k, v in items]
 
 
 def _smallest_divisor_gt1(n: int) -> int:
@@ -168,7 +163,7 @@ def _build_wheel_base(items: List[WheelItem], size: int, margin: int, rng: rando
 
     #Font, used this one for Zuko Counter before so it's on hand
     try:
-        font = ImageFont.truetype("arialbd.ttf", size=max(18, size // 18))
+        font = ImageFont.truetype("arialbd.ttf", size=max(30, size // 30))
     except Exception:
         font = ImageFont.load_default()
 
