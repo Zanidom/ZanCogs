@@ -24,7 +24,7 @@ def _parse_items(tokens: List[str]) -> List[WheelItem]:
         if not token:
             continue
 
-        #try weight:label format (only split on first ":")
+        #weight:label format (only try and split on first ":")
         if ":" in token:
             left, right = token.split(":", 1)
             left = left.strip()
@@ -36,10 +36,11 @@ def _parse_items(tokens: List[str]) -> List[WheelItem]:
                 items.append(WheelItem(label=right, weight=w))
                 continue
 
-        #otherwise default weight 1
+        #default weight 1 if none given
         items.append(WheelItem(label=token, weight=1))
 
-    return [WheelItem(k, v) for k, v in items]
+    return items
+
 
 
 def _smallest_divisor_gt1(n: int) -> int:
@@ -163,7 +164,7 @@ def _build_wheel_base(items: List[WheelItem], size: int, margin: int, rng: rando
 
     #Font, used this one for Zuko Counter before so it's on hand
     try:
-        font = ImageFont.truetype("arialbd.ttf", size=max(30, size // 30))
+        font = ImageFont.truetype("arialbd.ttf", size=max(30, size // 18))
     except Exception:
         font = ImageFont.load_default()
 
