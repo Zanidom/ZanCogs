@@ -164,7 +164,7 @@ def _build_wheel_base(items: List[WheelItem], size: int, margin: int, rng: rando
 
     #Font, used this one for Zuko Counter before so it's on hand
     try:
-        font = ImageFont.truetype("arialbd.ttf", size=max(30, size // 18))
+        font = ImageFont.truetype("arialbd.ttf", size=max(40, size // 10))
     except Exception:
         font = ImageFont.load_default()
 
