@@ -194,8 +194,17 @@ class Purge(commands.Cog):
             to_bulk = []
             to_single = []
 
+            #calc when we want messages since, allows us to filter on a thread/channel basis
+            now = dt.datetime.now(dt.timezone.utc)
+            after = None if plan.days == 0 else (now - dt.timedelta(days=plan.days))
+            
             try:
-                async for msg in src.history(limit=plan.per_channel_limit, after=after, oldest_first=False):
+                async for msg in src.history(limit=plan.per_channel_limit, after=after, oldest_first=False, after=after):
+                    #If we’ve crossed our time window, stop scanning this source.
+                    #should save a lot of time across lesser-used threads and channels
+                    if after is not None and msg.created_at < after:
+                        break
+                    
                     if msg.author.id != plan.user.id:
                         continue
                     total_found += 1
@@ -267,8 +276,28 @@ class Purge(commands.Cog):
             return perms.view_channel and perms.read_message_history and perms.manage_messages
 
         return False
+    
+    def _thread_last_activity(self, th: discord.Thread) -> Optional[dt.datetime]:
+        """
+        Best-effort last activity time without fetching messages.
+        Uses last_message_id snowflake time when possible.
+        """
+        if th.last_message_id:
+            return discord.utils.snowflake_time(th.last_message_id)
+        #If there's no last_message_id, fallback to thread creation time.
+        return th.created_at
 
-    async def _iter_message_sources(self, guild: discord.Guild, include_archived: bool) -> AsyncIterator[MessageSource]:
+    def _should_scan_thread(self, th: discord.Thread, after: Optional[dt.datetime]) -> bool:
+        if after is None:
+            return True
+        last = self._thread_last_activity(th)
+        if last is None:
+            #Unknown -> scan (safe default)
+            return True
+        return last >= after
+
+
+    async def _iter_message_sources(self, guild: discord.Guild, include_archived: bool, after: Optional[dt.datetime]) -> AsyncIterator[MessageSource]:
         """
         Yield every message source we should scan:
         - each text channel
@@ -281,7 +310,8 @@ class Purge(commands.Cog):
             #Active threads (public/private that are currently active)
             try:
                 for th in ch.threads:
-                    yield th
+                    if self._should_scan_thread(th, after):
+                        yield th
             except Exception:
                 #Some older d.py versions / edge cases; just skip
                 pass
@@ -292,14 +322,16 @@ class Purge(commands.Cog):
             #Archived public threads
             try:
                 async for th in ch.archived_threads(limit=None):
-                    yield th
+                    if self._should_scan_thread(th, after):
+                        yield th
             except (discord.Forbidden, discord.HTTPException):
                 pass
 
             #Archived private threads (requires Manage Threads)
             try:
                 async for th in ch.archived_threads(limit=None, private=True):
-                    yield th
+                    if self._should_scan_thread(th, after):
+                        yield th
             except (discord.Forbidden, discord.HTTPException, TypeError):
                 #TypeError if  discord.py version doesn't support private=True for god knows what reason
                 pass
