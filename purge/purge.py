@@ -307,17 +307,14 @@ class Purge(commands.Cog):
     async def _send_auditlog(self, ctx: commands.Context, plan: PurgePlan, result: dict):
         guild = ctx.guild
         if guild is None:
-            print("None guild")
             return
 
         auditlog = await self._get_auditlog_channel(guild)
         if auditlog is None:
-            print("None auditlog channel")
             return
 
         me = guild.me
         if me and not auditlog.permissions_for(me).send_messages:
-            print("None permissions?!")
             return
 
         window = "ALL TIME" if plan.days == 0 else f"last {plan.days} day(s)"
