@@ -1,0 +1,9 @@
+{
+  "author": [ "Zan" ],
+  "install_msg": "Thank you for installing Zan's Purge cog!",
+  "name": "Purge",
+  "short": "Lets you purge messages sent by specific Discord members",
+  "description": "Lets you purge messages sent by specific Discord members; allows for specific time limits and thread control",
+  "tags": [ "Purge"],
+  "end_user_data_statement": "This cog stores no data."
+}
