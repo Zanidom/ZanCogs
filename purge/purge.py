@@ -199,7 +199,7 @@ class Purge(commands.Cog):
             after = None if plan.days == 0 else (now - dt.timedelta(days=plan.days))
             
             try:
-                async for msg in src.history(limit=plan.per_channel_limit, after=after, oldest_first=False, after=after):
+                async for msg in src.history(limit=plan.per_channel_limit, after=after, oldest_first=False):
                     #If we’ve crossed our time window, stop scanning this source.
                     #should save a lot of time across lesser-used threads and channels
                     if after is not None and msg.created_at < after:
