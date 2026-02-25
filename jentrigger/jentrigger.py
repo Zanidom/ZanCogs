@@ -54,7 +54,7 @@ class ConfirmationView(discord.ui.View):
         await interaction.message.delete()
 
 class jentrigger(commands.Cog):
-    """Cog to let you buy edges for Jen!"""
+    """Cog to let you fire off a custom command at Jen!"""
     def __init__(self, bot):
         self.bot = bot
         self.__configRegister()
@@ -125,7 +125,8 @@ class jentrigger(commands.Cog):
         data_template = command_config.get('webhooktext', 'Default webhook message')
         
         data = data_template.replace("$USERNAME$", ctx.author.name)
-        
+        method = str(command_config.get("webhookaction", "PUT")).upper()
+
         if url == "unconfigured":
             raise CommandError("Webhook URL has not been configured for this command.")
         
@@ -133,10 +134,11 @@ class jentrigger(commands.Cog):
         
         async with aiohttp.ClientSession() as session:
             try:
-                async with session.put(url, json={"data": data}, headers=headers) as response:
-                    if response.status != 200:
-                        print (response)
-                        raise CommandError("Failed to send webhook request.")
+                req = session.request
+                async with req(method, url, json={"data": data}, headers=headers) as response:
+                    if response.status <= 200 or response.status >= 300:
+                        text = await response.text()
+                        raise CommandError(f"Failed to send webhook request. HTTP {response.status}: {text[:300]}")
             except asyncio.TimeoutError:
                 raise CommandError("The webhook request timed out.")
             except aiohttp.ClientError as e:
@@ -354,7 +356,7 @@ class jentrigger(commands.Cog):
             await ctx.send(f"Not enough arguments supplied.")
             return
         
-        valid_settings = ["cost", "user", "percentage", "mode", "embedtitle", "embedtext", "embedpretext", "embedcolour", "embedcolor", "embedavatarurl", "privatemessage", "privatemessageuser", "webhookurl", "webhooktext"]
+        valid_settings = ["cost", "user", "percentage", "mode", "embedtitle", "embedtext", "embedpretext", "embedcolour", "embedcolor", "embedavatarurl", "privatemessage", "privatemessageuser", "webhookurl", "webhooktext", "webhookaction"]
         if args[1].lower() not in valid_settings:
             await ctx.send(f"Invalid setting. Valid settings are: {', '.join(valid_settings)}")
             return
@@ -384,7 +386,14 @@ class jentrigger(commands.Cog):
         if lowered == "embedcolor":
             args_list[1] = "embedcolour"
         
-        if args_list[1].lower() == "embedcolour":
+        if lowered == "webhookaction":
+            allowed = ["get", "post", "put", "patch", "delete", "head", "options"]
+            if args_list[2].lower() not in allowed:
+                await ctx.send("Valid options for webhookaction are: " + ", ".join(sorted(allowed)).upper().replace(", ", ", "))
+                return
+            args_list[2] = args_list[2].upper()
+
+        if lowered == "embedcolour":
             if args_list[2][0] != '#':
                 args_list[2] = '#' + args_list[2].lower()
 
