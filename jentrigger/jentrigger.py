@@ -136,7 +136,7 @@ class jentrigger(commands.Cog):
             try:
                 req = session.request
                 async with req(method, url, json={"data": data}, headers=headers) as response:
-                    if response.status <= 200 or response.status >= 300:
+                    if response.status < 200 or response.status >= 300:
                         text = await response.text()
                         raise CommandError(f"Failed to send webhook request. HTTP {response.status}: {text[:300]}")
                     if method.upper() == "GET":
