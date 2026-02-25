@@ -139,6 +139,9 @@ class jentrigger(commands.Cog):
                     if response.status <= 200 or response.status >= 300:
                         text = await response.text()
                         raise CommandError(f"Failed to send webhook request. HTTP {response.status}: {text[:300]}")
+                    if method.upper() == "GET":
+                        output = await response.text()
+                        await ctx.send(f"{output}")
             except asyncio.TimeoutError:
                 raise CommandError("The webhook request timed out.")
             except aiohttp.ClientError as e:
