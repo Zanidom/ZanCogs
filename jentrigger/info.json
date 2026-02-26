@@ -1,7 +1,7 @@
 {
   "author": [ "Zan (Zanidom)"],
     "short" : "Cog for sending a specific piece of data to a webhook",
-    "description" : "Cog that lets users pay server currency to send a specific request to a configurable webhook.",
+    "description" : "Cog that lets users pay server currency to send a specific request to a configurable webhook, or lay out a customizable embed.",
     "name" : "jentrigger",
     "tags" : ["requests"],
     "install_msg" : "Thank you for installing the JenTrigger cog!"

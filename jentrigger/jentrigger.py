@@ -7,6 +7,7 @@ import asyncio
 import aiohttp
 from discord.ext.commands import CommandError
 import re
+import json
 
 class ConfirmationView(discord.ui.View):
     def __init__(self, ctx, cost, cog, callback, command_name, *args, **kwargs):
@@ -134,14 +135,44 @@ class jentrigger(commands.Cog):
         
         async with aiohttp.ClientSession() as session:
             try:
-                req = session.request
-                async with req(method, url, json={"data": data}, headers=headers) as response:
+                async with session.request(method, url, json={"data": data}, headers=headers) as response:
+                    text = await response.text()
+
                     if response.status < 200 or response.status >= 300:
-                        text = await response.text()
                         raise CommandError(f"Failed to send webhook request. HTTP {response.status}: {text[:300]}")
-                    if method.upper() == "GET":
-                        output = await response.text()
-                        await ctx.send(f"{output}")
+
+                    template = command_config.get("webhookresponsetemplate")
+                    if not template:
+                        return  # no response message configured, do nothing :shrug:
+
+                    #Try parse JSON (but don’t explode if it isn’t, shit happens)
+                    payload = None
+                    try:
+                        payload = json.loads(text)
+                    except Exception:
+                        payload = None
+
+                    #Build replacement map
+                    replacements = {"text": text}
+
+                    if isinstance(payload, dict):
+                        #allow {Content}, {Reason}, etc.
+                        for k, v in payload.items():
+                            replacements[str(k)] = "" if v is None else str(v)
+
+                    #Replace {Key} tokens
+                    def repl(match: re.Match) -> str:
+                        key = match.group(1).strip()
+                        return replacements.get(key, match.group(0))  # keep {Key} if missing
+
+                    out = re.sub(r"\{([^{}]+)\}", repl, template)
+
+                    #Discord message length safety
+                    if len(out) > 2000:
+                        out = out[:1997] + "..."
+
+                    if out.strip():
+                        await ctx.send(out)
             except asyncio.TimeoutError:
                 raise CommandError("The webhook request timed out.")
             except aiohttp.ClientError as e:
@@ -359,7 +390,7 @@ class jentrigger(commands.Cog):
             await ctx.send(f"Not enough arguments supplied.")
             return
         
-        valid_settings = ["cost", "user", "percentage", "mode", "embedtitle", "embedtext", "embedpretext", "embedcolour", "embedcolor", "embedavatarurl", "privatemessage", "privatemessageuser", "webhookurl", "webhooktext", "webhookaction"]
+        valid_settings = ["cost", "user", "percentage", "mode", "embedtitle", "embedtext", "embedpretext", "embedcolour", "embedcolor", "embedavatarurl", "privatemessage", "privatemessageuser", "webhookurl", "webhooktext", "webhookaction", "webhookresponsetemplate"]
         if args[1].lower() not in valid_settings:
             await ctx.send(f"Invalid setting. Valid settings are: {', '.join(valid_settings)}")
             return
@@ -400,7 +431,7 @@ class jentrigger(commands.Cog):
             if args_list[2][0] != '#':
                 args_list[2] = '#' + args_list[2].lower()
 
-        if (lowered == "privatemessage" or lowered == "embedtext" or lowered == "embedtitle" or lowered == "embedpretext"):
+        if (lowered == "privatemessage" or lowered == "embedtext" or lowered == "embedtitle" or lowered == "embedpretext" or lowered == "webhookresponsetemplate"):
             args_list[2] = " ".join(args[2:])
 
         if lowered == "embedavatarurl":
