@@ -8,7 +8,7 @@
     "description": "Looks up how many syllables are in a given word using the Datamuse API.",
     "name": "Syllables",
     "required_cogs": {},
-    "requirements": [],
+    "requirements": ["requests"],
     "tags": ["syllables", "utility"],
     "type": "COG",
     "version": "1.0.0"

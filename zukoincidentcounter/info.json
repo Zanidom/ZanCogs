@@ -3,6 +3,7 @@
     "short" : "Cog that tracks a datetime since Zuko hurt himself :elmochaos:",
     "description" : "Cog that lets Zan check datetimes",
     "name" : "ZukoTracker",
+    "requirements": ["pillow"],
     "tags" : ["roles"],
     "install_msg" : "Thank you for installing Zan's Zukotracker cog!"
 }
