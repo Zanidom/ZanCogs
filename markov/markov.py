@@ -190,9 +190,23 @@ class Markov(commands.Cog):
             await ctx.send(f"Nothing to prune - all {len(all_users)} stored users still share a server with me.")
             return
 
-        if confirm != "confirm":
-            await ctx.send(f"{len(stale)} of {len(all_users)} stored users no longer share a server with me.\n"
-                f"Run `{ctx.clean_prefix}markov prune confirm` to back their data up and delete it.")
+        #A huge stale fraction usually means the check itself is wrong (logged in
+        #under a different token/account, or the member cache isn't populated),
+        #not that everyone actually left. Demand a scarier confirmation for that.
+        mass_prune = len(stale) > len(all_users) / 2
+        required = "confirm-mass" if mass_prune else "confirm"
+
+        if confirm != required:
+            msg = (f"{len(stale)} of {len(all_users)} stored users no longer share a server with me "
+                f"(I am `{self.bot.user}` in {len(self.bot.guilds)} server(s)).\n")
+            if mass_prune:
+                msg += ("⚠ That is over half of all stored users. If this bot is signed in under a "
+                    "different token or account than the one that collected this data, this prune "
+                    "would be wrong. Double-check the identity above, then run "
+                    f"`{ctx.clean_prefix}markov prune confirm-mass` if you really mean it.")
+            else:
+                msg += f"Run `{ctx.clean_prefix}markov prune confirm` to back their data up and delete it."
+            await ctx.send(msg)
             return
 
         backup_path = data_manager.cog_data_path(self) / f"prune_backup_{datetime.now():%Y%m%d_%H%M%S}.json"
