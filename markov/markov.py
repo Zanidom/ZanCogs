@@ -1,10 +1,12 @@
 import discord
+import json
 import logging
 import random
 import re
+from datetime import datetime
 from typing import Callable, Dict, Optional, Tuple
 
-from redbot.core import checks, Config, commands
+from redbot.core import checks, Config, commands, data_manager
 
 log = logging.getLogger("red.cbd-cogs.markov")
 
@@ -163,6 +165,47 @@ class Markov(commands.Cog):
         """Remove all language models from your profile."""
         await self.conf.user(ctx.author).chains.set({})
         await ctx.send("All models deleted.")
+
+    @checks.is_owner()
+    @markov.command()
+    async def prune(self, ctx: commands.Context, confirm: Optional[str] = None):
+        """Remove stored models for users who no longer share any server with the bot.
+
+        Models are stored per user (not per guild), so a user is only prunable
+        once they are in none of the bot's servers.
+
+        Usage:
+        - ;markov prune            (dry run - reports what would be removed)
+        - ;markov prune confirm    (backs up to the cog data folder, then deletes)
+        """
+        if not self.bot.intents.members:
+            await ctx.send("I need the members intent to know who is still in a server - refusing to prune blind.")
+            return
+
+        all_users = await self.conf.all_users()
+        stale = [uid for uid in all_users
+                 if not any(g.get_member(uid) for g in self.bot.guilds)]
+
+        if not stale:
+            await ctx.send(f"Nothing to prune - all {len(all_users)} stored users still share a server with me.")
+            return
+
+        if confirm != "confirm":
+            await ctx.send(f"{len(stale)} of {len(all_users)} stored users no longer share a server with me.\n"
+                f"Run `{ctx.clean_prefix}markov prune confirm` to back their data up and delete it.")
+            return
+
+        backup_path = data_manager.cog_data_path(self) / f"prune_backup_{datetime.now():%Y%m%d_%H%M%S}.json"
+        with open(backup_path, "w", encoding="utf-8") as f:
+            json.dump({uid: all_users[uid] for uid in stale}, f)
+        backup_mb = backup_path.stat().st_size / 1024 / 1024
+
+        async with ctx.typing():
+            for uid in stale:
+                await self.conf.user_from_id(uid).clear()
+
+        await ctx.send(f"Pruned {len(stale)} users ({backup_mb:.1f} MB backed up to `{backup_path.name}`).\n"
+            "Reload me (`[p]reload markov`) to release the memory they were using.")
 
     @checks.admin_or_permissions(manage_guild=True)
     @commands.guild_only()
