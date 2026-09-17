@@ -1,0 +1,10 @@
+{
+    "author": ["MomoandGemini", "Zan (Zanidom)"],
+    "name": "ShowTix",
+    "short": "Self-service shows (temporary voice channels) and guest-list threads.",
+    "description": "Users open a show for a refundable deposit: a private voice channel under a configured category, tickets sold via per-user permissions, auto-closed after a configurable window (deposit forfeited). Also manages private guest-list threads. Based on ShowTix by MomoandGemini (https://github.com/MomotheWingedLemur/Red-Cogs), reworked by Zan.",
+    "install_msg": "ShowTix installed! Admins: run `[p]showtixset category` and `[p]showtixset threadhome` to open the box office.",
+    "tags": ["utility", "voice", "threads", "economy"],
+    "requirements": [],
+    "end_user_data_statement": "This cog stores Discord user IDs of show owners and ticket holders while a show or guest-list thread exists, and deletes show records when the show closes."
+}
